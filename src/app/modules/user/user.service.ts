@@ -1,4 +1,5 @@
 import { envVars } from "../../config/env";
+import { Wallet } from "../wallet.ts/wallet.model";
 import { IUser } from "./user.interface"
 import { User } from "./user.model";
 import bcryptjs from 'bcryptjs';
@@ -17,6 +18,8 @@ const createUser = async (payload: IUser) => {
         password: hashedPassword,
         ...rest
     })
+
+    await Wallet.create({ user: user._id, balance: 50 });
 
     return user;
 }
