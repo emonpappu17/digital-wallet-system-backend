@@ -32,16 +32,6 @@ import { setAuthCookie } from "../../utils/setCookie";
 const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const loginInfo = await AuthService.login(req.body);
 
-    // res.cookie("accessToken", loginInfo.accessToken, {
-    //     httpOnly: true,
-    //     secure: false
-    // })
-
-    // res.cookie("refreshToken", loginInfo.refreshToken, {
-    //     httpOnly: true,
-    //     secure: false
-    // })
-
     setAuthCookie(res, loginInfo)
 
     res.status(200).json({

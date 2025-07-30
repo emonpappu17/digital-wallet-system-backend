@@ -26,9 +26,6 @@ export const registerUserZodSchema = z.object({
         .regex(/^(?=.*\d)/, {
             message: "Password must contain at least 1 number.",
         }),
-    role: z
-        .enum(Object.values(Role) as [string])
-        .optional(),
 });
 
 

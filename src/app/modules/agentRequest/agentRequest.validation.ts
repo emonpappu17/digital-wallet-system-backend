@@ -1,7 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-
-export const loginUserZodSchema = z.object({
+export const agentRequestZodSchema = z.object({
+    name: z
+        .string()
+        .nonempty("Name is required"),
     phoneNumber: z
         .string()
         .nonempty('Phone number is required')
@@ -11,6 +13,7 @@ export const loginUserZodSchema = z.object({
     password: z
         .string()
         .nonempty("Phone number is required")
+
         .min(8, { message: "Password must be at least 8 characters long." })
         .regex(/^(?=.*[A-Z])/, {
             message: "Password must contain at least 1 uppercase letter.",
@@ -21,5 +24,6 @@ export const loginUserZodSchema = z.object({
         .regex(/^(?=.*\d)/, {
             message: "Password must contain at least 1 number.",
         }),
-
+    tradeLicenseNumber: z.string(),
+    address: z.string().optional(),
 })

@@ -1,10 +1,9 @@
-import { Error } from "mongoose";
-import { IUser, Role } from "../user/user.interface"
-import { User } from "../user/user.model";
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { Error } from "mongoose";
 import { envVars } from "../../config/env";
 import { generateToken } from "../../utils/jwt";
+import { IUser } from "../user/user.interface";
+import { User } from "../user/user.model";
 
 const login = async (payload: Partial<IUser>) => {
     const { phoneNumber, password } = payload;
