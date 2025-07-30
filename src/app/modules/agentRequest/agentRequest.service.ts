@@ -29,6 +29,14 @@ const createAgentRequest = async (payload: Partial<IAgentRequest>) => {
     return agentRequest;
 }
 
+const getAllAgentRequests = async () => {
+    const requests = await AgentRequest.find();
+
+    if (!requests) throw new Error("No request found")
+
+    return requests;
+}
+
 const approveAgentRequest = async (id: string) => {
     const request = await AgentRequest.findByIdAndUpdate(id, { status: AgentRequestStatus.APPROVED })
 
@@ -51,5 +59,6 @@ const approveAgentRequest = async (id: string) => {
 
 export const agentRequestService = {
     createAgentRequest,
-    approveAgentRequest
+    approveAgentRequest,
+    getAllAgentRequests
 }

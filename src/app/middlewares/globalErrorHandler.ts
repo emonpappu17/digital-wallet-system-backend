@@ -3,8 +3,11 @@ import { envVars } from "../config/env";
 
 
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+
+    console.log(err);
+
     let statusCode = 500;
-    let message = 'Something went wrong!!'
+    let message = err.message || 'Something went wrong!!'
     res.status(statusCode).json({
         success: false,
         message,
