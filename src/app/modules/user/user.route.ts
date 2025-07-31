@@ -13,15 +13,11 @@ router.post(
     UserController.createUser
 )
 
-// router.get(
-//     "/all-users",
-//     checkAuth(Role.ADMIN)
-// )
-
-// router.get(
-//     "/me",
-//     checkAuth(...Object.values(Role)),
-// )
+router.get(
+    "/me",
+    checkAuth(...Object.values(Role)),
+    UserController.myProfile
+)
 
 
 export const userRoutes = router;

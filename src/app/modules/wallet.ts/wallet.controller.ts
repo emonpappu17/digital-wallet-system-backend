@@ -12,6 +12,17 @@ const fundAgentWallet = catchAsync(async (req: Request, res: Response, next: Nex
     })
 })
 
+const myWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.user.userId;
+    const result = await walletService.myWallet(id);
+    res.status(200).json({
+        success: true,
+        message: "Wallet got successfully",
+        data: result
+    })
+})
+
 export const walletController = {
-    fundAgentWallet
+    fundAgentWallet,
+    myWallet
 }

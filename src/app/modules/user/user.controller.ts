@@ -22,6 +22,7 @@ import { catchAsync } from "../../utils/catchAsync";
 // }
 
 const createUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
     const payload = req.body
 
     const user = await UserService.createUser(payload)
@@ -36,6 +37,21 @@ const createUser = catchAsync(async (req: Request, res: Response, next: NextFunc
 
 })
 
+const myProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const id = req.user.userId
+
+    const user = await UserService.myProfile(id)
+
+    res.status(200).json({
+        success: true,
+        message: "Profile retrieved successfully",
+        data: user
+    })
+
+})
+
 export const UserController = {
-    createUser
+    createUser,
+    myProfile
 }

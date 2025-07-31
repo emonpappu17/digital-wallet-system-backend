@@ -257,11 +257,20 @@ const getMyTransactionHistory = async (id: string) => {
     return transactions;
 }
 
+// const myTransaction = async (id: string) => {
+//     const user = await Transaction.findById(id);
+
+//     if (!user) throw new Error("Profile not found")
+
+//     return user;
+// }
+
 export const transactionService = {
     addMoney,
     withdrawMoney,
     sendMoney,
     cashIn,
     cashOut,
+    // myTransaction,
     getMyTransactionHistory
 }

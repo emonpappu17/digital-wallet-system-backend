@@ -1,3 +1,4 @@
+import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import { Role, Status } from "../user/user.interface";
 import { User } from "../user/user.model";
 import { IWallet } from "./wallet.interface"
@@ -26,6 +27,20 @@ const fundAgentWallet = async (payload: IFund) => {
     await wallet.save();
 }
 
+const myWallet = async (id: string) => {
+
+    const user = await User.findById(id)
+
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
+
+    const wallet = await Wallet.findOne({ user: id }).populate("user", "name phoneNumber role");
+
+    if (!wallet) throw new Error("Wallet not found")
+
+    return wallet;
+}
+
 export const walletService = {
-    fundAgentWallet
+    fundAgentWallet,
+    myWallet
 }

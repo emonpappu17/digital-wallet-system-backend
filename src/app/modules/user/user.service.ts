@@ -1,4 +1,5 @@
 import { envVars } from "../../config/env";
+import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import { Wallet } from "../wallet.ts/wallet.model";
 import { IUser } from "./user.interface"
 import { User } from "./user.model";
@@ -24,6 +25,18 @@ const createUser = async (payload: IUser) => {
     return user;
 }
 
+const myProfile = async (id: string) => {
+
+    const user = await User.findById(id);
+
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
+
+    if (!user) throw new Error("Profile not found")
+
+    return user;
+}
+
 export const UserService = {
-    createUser
+    createUser,
+    myProfile
 }

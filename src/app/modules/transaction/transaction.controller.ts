@@ -62,11 +62,22 @@ const getMyTransactionHistory = catchAsync(async (req: Request, res: Response, n
     })
 })
 
+// const myTransaction = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+//     const id = req.user.userId;
+//     const result = await transactionService.myTransaction(id);
+//     res.status(200).json({
+//         success: true,
+//         message: "Transaction history retrieved successfully",
+//         data: result
+//     })
+// })
+
 export const transactionController = {
     addMoney,
     withdrawMoney,
     sendMoney,
     cashIn,
     cashOut,
+    // myTransaction,
     getMyTransactionHistory
 }

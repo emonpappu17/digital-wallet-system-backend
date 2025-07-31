@@ -6,7 +6,11 @@ export enum Role {
 
 export enum Status {
     ACTIVE = "ACTIVE",
-    BLOCKED = "BLOCKED"
+    BLOCKED = "BLOCKED",
+    PENDING = "PENDING",
+    APPROVED = "APPROVED",
+    REJECTED = "REJECTED",
+    SUSPEND = "SUSPEND"
 }
 
 export interface IUser {

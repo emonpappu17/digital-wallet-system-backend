@@ -24,17 +24,23 @@ router.post(
 //     checkAuth(Role.ADMIN),
 // )
 
-// use query builder
-// router.get(
-//     '/my',
-//     checkAuth(Role.USER, Role.AGENT),
-// )
-
-// router.get(
-//     '/all-wallets',
+// router.patch(
+//     "/wallets/:id/block",
 //     checkAuth(Role.ADMIN),
-// )
+//     walletController.blockWallet
+// );
+// router.patch(
+//     "/wallets/:id/unblock",
+//     checkAuth(Role.ADMIN),
+//     walletController.unblockWallet
+// );
 
 
+// use query builder
+router.get(
+    '/my',
+    checkAuth(Role.USER, Role.AGENT),
+    walletController.myWallet
+)
 
 export const walletRoutes = router;
