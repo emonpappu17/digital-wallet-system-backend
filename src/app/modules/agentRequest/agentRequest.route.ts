@@ -10,7 +10,6 @@ const router = Router();
 router.post(
     "/",
     validateRequest(agentRequestZodSchema),
-    checkAuth(Role.ADMIN),
     agentRequestController.createAgentRequest
 )
 
@@ -24,5 +23,16 @@ router.patch(
     checkAuth(Role.ADMIN),
     agentRequestController.approveAgentRequest
 )
+
+router.patch(
+    "/suspend/:id",
+    checkAuth(Role.ADMIN),
+    agentRequestController.suspendAgent
+)
+
+// router.get(
+//     "/all-agents",
+//     checkAuth(Role.ADMIN),
+// )
 
 export const agentRequestRoutes = router;

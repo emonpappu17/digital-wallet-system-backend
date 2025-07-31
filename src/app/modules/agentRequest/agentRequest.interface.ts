@@ -1,7 +1,8 @@
 export enum AgentRequestStatus {
     PENDING = "PENDING",
     APPROVED = "APPROVED",
-    REJECTED = "REJECTED"
+    REJECTED = "REJECTED",
+    SUSPEND = "SUSPEND"
 }
 
 export interface IAgentRequest {

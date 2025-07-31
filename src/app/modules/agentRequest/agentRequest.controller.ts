@@ -26,7 +26,18 @@ const approveAgentRequest = catchAsync(async (req: Request, res: Response, next:
 
     const { id } = req.params;
 
-    console.log({ id });
+    const result = await agentRequestService.approveAgentRequest(id)
+
+    res.status(200).json({
+        success: true,
+        message: "Agent Created Successfully",
+        data: result
+    })
+})
+
+const suspendAgent = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const { id } = req.params;
 
     const result = await agentRequestService.approveAgentRequest(id)
 
@@ -40,5 +51,6 @@ const approveAgentRequest = catchAsync(async (req: Request, res: Response, next:
 export const agentRequestController = {
     createAgentRequest,
     approveAgentRequest,
-    getAllAgentRequests
+    getAllAgentRequests,
+    suspendAgent
 }

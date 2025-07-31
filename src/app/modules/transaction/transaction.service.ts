@@ -233,9 +233,7 @@ const cashOut = async (userId: string, payload: ICashOut) => {
 }
 
 const getMyTransactionHistory = async (id: string) => {
-    console.log({ id });
     const userObjectId = new Types.ObjectId(id);
-    console.log({ userObjectId });
 
     const transactions = await Transaction.find({
         $or: [
