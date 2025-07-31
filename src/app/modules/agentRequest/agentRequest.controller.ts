@@ -39,11 +39,11 @@ const suspendAgent = catchAsync(async (req: Request, res: Response, next: NextFu
 
     const { id } = req.params;
 
-    const result = await agentRequestService.approveAgentRequest(id)
+    const result = await agentRequestService.suspendAgent(id)
 
     res.status(200).json({
         success: true,
-        message: "Agent Created Successfully",
+        message: "Agent Suspended Successfully",
         data: result
     })
 })

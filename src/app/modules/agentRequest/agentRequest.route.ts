@@ -30,9 +30,6 @@ router.patch(
     agentRequestController.suspendAgent
 )
 
-// router.get(
-//     "/all-agents",
-//     checkAuth(Role.ADMIN),
-// )
+
 
 export const agentRequestRoutes = router;

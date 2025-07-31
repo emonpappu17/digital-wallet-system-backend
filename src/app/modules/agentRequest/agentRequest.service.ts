@@ -38,6 +38,15 @@ const getAllAgentRequests = async () => {
 }
 
 const approveAgentRequest = async (id: string) => {
+    const user = await User.findById(id);
+
+    if (user?.role === Role.USER || user?.role === Role.ADMIN) throw new Error("User or Admin cannot be approved!!")
+
+    if (user?.status === AgentRequestStatus.SUSPEND as string) {
+        const request = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.APPROVED }, { new: true })
+        return request
+    }
+
     const request = await AgentRequest.findByIdAndUpdate(id, { status: AgentRequestStatus.APPROVED })
 
     if (!request) throw new Error("Request not found")
@@ -57,8 +66,24 @@ const approveAgentRequest = async (id: string) => {
     })
 }
 
+const suspendAgent = async (id: string) => {
+    const user = await User.findById(id);
+
+    if (user?.role === Role.USER) throw new Error("User cannot be suspend!!")
+
+    const admin = await User.findById(id);
+
+    if (admin?.role === Role.ADMIN) throw new Error("Admin cannot be suspend!!")
+
+    const agent = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.SUSPEND }, { new: true })
+
+    if (!agent || agent.role !== Role.AGENT) throw new Error("Agent not found")
+    return agent;
+}
+
 export const agentRequestService = {
     createAgentRequest,
     approveAgentRequest,
-    getAllAgentRequests
+    getAllAgentRequests,
+    suspendAgent
 }

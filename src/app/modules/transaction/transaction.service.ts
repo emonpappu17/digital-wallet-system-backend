@@ -1,9 +1,10 @@
 import mongoose, { MongooseError, Types } from "mongoose";
-import { Role } from "../user/user.interface";
+import { Role, Status } from "../user/user.interface";
 import { User } from "../user/user.model"
 import { Wallet } from "../wallet.ts/wallet.model";
 import { ITransaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "./transaction.interface";
 import { Transaction } from "./transaction.model";
+import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 
 interface ICashIn {
     userPhoneNumber: string,
@@ -145,6 +146,7 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
         const agent = await User.findById(agentId).session(session);
         if (!agent) throw new Error("Agent not found");
         if (agent.role !== Role.AGENT) throw new Error("This is not an agent account");
+        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
 
         const user = await User.findOne({ phoneNumber: userPhoneNumber }).session(session);
         if (!user || user.role === Role.AGENT) throw new Error("User not found");
@@ -199,6 +201,8 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         if (!agent || agent.role === Role.USER) throw new Error("Agent not found")
         if (agent.role !== Role.AGENT) throw new Error("This is not an agent account");
 
+        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new Error("Agent is suspended try another agent")
+
         const agentWallet = await Wallet.findOne({ user: agent._id }).session(session);
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
 
@@ -233,6 +237,10 @@ const cashOut = async (userId: string, payload: ICashOut) => {
 }
 
 const getMyTransactionHistory = async (id: string) => {
+    const user = await User.findById(id)
+
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
+
     const userObjectId = new Types.ObjectId(id);
 
     const transactions = await Transaction.find({
