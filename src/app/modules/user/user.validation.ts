@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { Role } from './user.interface';
 
 export const registerUserZodSchema = z.object({
     name: z

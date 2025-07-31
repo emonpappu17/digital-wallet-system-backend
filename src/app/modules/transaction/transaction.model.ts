@@ -3,12 +3,12 @@ import { ITransaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "./transactio
 
 const transactionSchema = new Schema<ITransaction>({
     from: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
+        type: Schema.Types.Mixed,
+        required: true,
     },
     to: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
+        type: Schema.Types.Mixed,
+        required: true,
     },
     type: {
         type: String,
