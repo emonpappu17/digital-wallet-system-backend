@@ -19,13 +19,15 @@ const fundAgentWallet = async (payload: IFund) => {
         throw new AppError(httpStatus.BAD_REQUEST, "Invalid agent number")
     }
 
-    const wallet = await Wallet.findOne({ user: user._id });
+    const wallet = await Wallet.findOne({ user: user._id }).populate("user","name phoneNumber");
 
     if (!wallet) throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found")
 
     wallet.balance += amount;
 
     await wallet.save();
+
+    return wallet
 }
 
 const myWallet = async (id: string) => {

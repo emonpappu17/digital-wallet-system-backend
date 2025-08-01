@@ -12,7 +12,7 @@ const createUser = async (payload: IUser) => {
 
     const isUserExist = await User.findOne({ phoneNumber })
 
-    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "Phone number already exists")
+    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "Phone number already exists");
 
     const hashedPassword = await bcryptjs.hash(password, Number(envVars.BCRYPT_SALT_ROUND))
 
@@ -24,14 +24,16 @@ const createUser = async (payload: IUser) => {
 
     await Wallet.create({ user: user._id, balance: 50 });
 
-    return user;
+    const { password: pass, ...userInfo } = user.toObject();
+
+    return userInfo;
 }
 
 const myProfile = async (id: string) => {
 
-    const user = await User.findById(id);
+    const user = await User.findById(id).select("-password");
 
-    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin")
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin");
 
     if (!user) throw new AppError(httpStatus.NOT_FOUND, "Profile not found")
 

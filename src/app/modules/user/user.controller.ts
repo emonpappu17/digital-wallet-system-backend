@@ -9,8 +9,6 @@ const createUser = catchAsync(async (req: Request, res: Response, next: NextFunc
 
     const user = await UserService.createUser(payload)
 
-    console.log(user);
-
     res.status(200).json({
         success: true,
         message: "User created successfully",

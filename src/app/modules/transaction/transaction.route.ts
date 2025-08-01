@@ -42,6 +42,11 @@ router.post(
     checkAuth(Role.USER),
     transactionController.cashOut
 )
+router.get(
+    "/agent-commissions",
+    checkAuth(Role.AGENT),
+    transactionController.getAgentCommission
+)
 
 
 export const transactionRouter = router

@@ -28,10 +28,9 @@ const createAgentRequest = async (payload: Partial<IAgentRequest>) => {
         ...rest
     })
 
-    return {
-        phoneNumber,
-        ...rest
-    };
+    const { password: pas, ...agentInfo } = agentRequest.toObject();
+
+    return agentInfo;
 }
 
 const getAllAgentRequests = async () => {
@@ -69,7 +68,10 @@ const approveAgentRequest = async (id: string) => {
         user: agentUser._id,
         balance: 0
     })
-    return agentUser
+
+    const { password, ...rest } = agentUser.toObject();
+
+    return rest
 }
 
 const suspendAgent = async (id: string) => {
@@ -81,7 +83,7 @@ const suspendAgent = async (id: string) => {
 
     if (admin?.role === Role.ADMIN) throw new AppError(httpStatus.FORBIDDEN, "Admin cannot be suspend!!")
 
-    const agent = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.SUSPEND }, { new: true })
+    const agent = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.SUSPEND }, { new: true }).select("-password")
 
     if (!agent || agent.role !== Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "Agent not found")
     return agent;

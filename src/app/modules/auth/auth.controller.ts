@@ -6,30 +6,6 @@ import { setAuthCookie } from "../../utils/setCookie";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes"
 
-// const login = async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//         const loginInfo = await AuthService.login(req.body);
-
-//         res.cookie("accessToken", loginInfo.accessToken, {
-//             httpOnly: true,
-//             secure: false
-//         })
-
-//         res.cookie("refreshToken", loginInfo.refreshToken, {
-//             httpOnly: true,
-//             secure: false
-//         })
-
-//         res.status(200).json({
-//             success: true,
-//             message: "Login successful",
-//             data: loginInfo
-//         })
-
-//     } catch (error) {
-//         next(error)
-//     }
-// }
 
 const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const loginInfo = await AuthService.login(req.body);

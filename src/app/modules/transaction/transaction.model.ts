@@ -28,7 +28,7 @@ const transactionSchema = new Schema<ITransaction>({
         default: 0,
         min: [0, "Fee cannot be negative"]
     },
-    commission: {
+    agentCommission: {
         type: Number,
         default: 0,
         min: [0, "Commission cannot be negative"],

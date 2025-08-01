@@ -7,6 +7,7 @@ import { Transaction } from "./transaction.model";
 import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import httpStatus from "http-status-codes"
 import AppError from "../../errorHelpers/AppError";
+import { FEE_CONFIG } from "./transaction.contrant";
 
 interface ICashIn {
     userPhoneNumber: string,
@@ -20,6 +21,8 @@ interface ISendMoney {
     receiverPhoneNumber: string,
     amount: number
 }
+
+
 
 const addMoney = async (userId: string, amount: number) => {
     const session = await mongoose.startSession();
@@ -174,6 +177,8 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
         if (!user || user.role === Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "User not found");
         if (user.role !== Role.USER) throw new AppError(httpStatus.BAD_REQUEST, "This is not a user account");
 
+        const agentCommission = (amount * FEE_CONFIG.agentCommissionPercent) / 100;
+
         const agentWallet = await Wallet.findOne({ user: agentId }).session(session);
         const userWallet = await Wallet.findOne({ user: user._id }).session(session);
 
@@ -191,6 +196,7 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
 
         agentWallet.balance -= amount;
         userWallet.balance += amount;
+        agentWallet.balance += agentCommission;
 
         await agentWallet.save({ session });
         await userWallet.save({ session });
@@ -201,6 +207,7 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
                 to: user._id,
                 type: TRANSACTION_TYPE.CASH_IN,
                 amount,
+                agentCommission: agentCommission,
                 status: TRANSACTION_STATUS.COMPLETED
             }
         ], { session });
@@ -228,11 +235,17 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found")
         if (user.role !== Role.USER) throw new AppError(httpStatus.FORBIDDEN, "This is not a user account")
 
-        const agent = await User.findOne({ phoneNumber: agentPhoneNumber }).session(session)
-        if (!agent || agent.role === Role.USER) throw new AppError(httpStatus.NOT_FOUND, "Agent not found")
+        const agent = await User.findOne({ phoneNumber: agentPhoneNumber }).session(session);
+        if (!agent || agent.role === Role.USER) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
         if (agent.role !== Role.AGENT) throw new AppError(httpStatus.FORBIDDEN, "This is not an agent account");
 
         if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "Agent is suspended try another agent");
+
+        const fee = (amount * FEE_CONFIG.cashOutFeePercent) / 100;
+        const totalDeduction = amount + fee;
+        const agentCommission = (amount * FEE_CONFIG.agentCommissionPercent) / 100;
+
+        console.log({ fee, totalDeduction, agentCommission });
 
         const agentWallet = await Wallet.findOne({ user: agent._id }).session(session);
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
@@ -247,10 +260,10 @@ const cashOut = async (userId: string, payload: ICashOut) => {
             throw new AppError(httpStatus.FORBIDDEN, "User Wallet is blocked");
         }
 
-        if (userWallet.balance < amount) throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance")
+        if (userWallet.balance < totalDeduction) throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance")
 
-        agentWallet.balance += amount;
-        userWallet.balance -= amount;
+        agentWallet.balance += amount + agentCommission;
+        userWallet.balance -= totalDeduction;
 
         await agentWallet.save({ session });
         await userWallet.save({ session });
@@ -260,10 +273,12 @@ const cashOut = async (userId: string, payload: ICashOut) => {
                 from: user._id,
                 to: agent._id,
                 type: TRANSACTION_TYPE.CASH_OUT,
+                fee: fee,
+                agentCommission: agentCommission,
                 amount,
                 status: TRANSACTION_STATUS.COMPLETED
             }
-        ], { session })
+        ], { session });
 
         await session.commitTransaction();
         session.endSession();
@@ -295,11 +310,31 @@ const getMyTransactionHistory = async (id: string) => {
     return transactions;
 }
 
+const getAgentCommission = async (id: string) => {
+    const user = await User.findById(id)
+
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin");
+
+    const userObjectId = new Types.ObjectId(id);
+
+    const transactions = await Transaction.find({
+        $or: [
+            { from: userObjectId },
+            { to: userObjectId }
+        ]
+    }).sort({ createdAt: -1 }).select("-amount -fee -status")
+
+    if (!transactions) throw new AppError(httpStatus.NOT_FOUND, "Commissions not found")
+
+    return transactions;
+}
+
 export const transactionService = {
     addMoney,
     withdrawMoney,
     sendMoney,
     cashIn,
     cashOut,
-    getMyTransactionHistory
+    getMyTransactionHistory,
+    getAgentCommission
 }

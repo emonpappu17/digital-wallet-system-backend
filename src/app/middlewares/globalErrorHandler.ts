@@ -10,18 +10,6 @@ import { handleValidationError } from "../errorHelpers/handleValidationError";
 
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
 
-    // console.log(err);
-
-    // let statusCode = 500;
-    // let message = err.message || 'Something went wrong!!'
-    // res.status(statusCode).json({
-    //     success: false,
-    //     message,
-    //     // errorSources,
-    //     err: envVars.NODE_ENV === "development" ? err : null,
-    //     stack: envVars.NODE_ENV === "development" ? err.stack : null
-    // })
-
     let errorSources: TErrorSources[] = []
     let statusCode = 500;
     let message = 'Something went wrong!!'
