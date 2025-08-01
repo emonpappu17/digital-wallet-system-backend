@@ -4,17 +4,19 @@ import { envVars } from "../../config/env";
 import { generateToken } from "../../utils/jwt";
 import { IUser } from "../user/user.interface";
 import { User } from "../user/user.model";
+import AppError from '../../errorHelpers/AppError';
+import httpStatus from "http-status-codes"
 
 const login = async (payload: Partial<IUser>) => {
     const { phoneNumber, password } = payload;
 
     const user = await User.findOne({ phoneNumber })
 
-    if (!user) throw new Error("This Number is not exists")
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "This Number is not exists")
 
     const isPasswordMatched = await bcrypt.compare(password as string, user.password)
 
-    if (!isPasswordMatched) throw new Error("Password did not match")
+    if (!isPasswordMatched) throw new AppError(httpStatus.BAD_REQUEST, "Password did not match")
 
     const jwtPayload = {
         userId: user._id,

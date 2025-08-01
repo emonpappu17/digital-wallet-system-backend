@@ -5,6 +5,15 @@ import { loginUserZodSchema } from "./auth.validation";
 
 const router = Router()
 
-router.post("/login", validateRequest(loginUserZodSchema), authController.login)
+router.post(
+    "/login",
+    validateRequest(loginUserZodSchema),
+    authController.login
+)
+
+router.post(
+    "/logout",
+    authController.logout
+)
 
 export const authRoutes = router;

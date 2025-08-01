@@ -1,11 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { adminService } from "./admin.service";
+import { sendResponse } from "../../utils/sendResponse";
+import httpStatus from "http-status-codes"
 
 const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
     const result = await adminService.getAllUsers();
-    res.status(200).json({
+
+    sendResponse(res, {
         success: true,
+        statusCode: httpStatus.OK,
         message: "All users retrieved successfully",
         data: result
     })
@@ -15,8 +20,10 @@ const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFun
 const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const result = await adminService.getAllAgents();
-    res.status(200).json({
+
+    sendResponse(res, {
         success: true,
+        statusCode: httpStatus.OK,
         message: "All Agents retrieved successfully",
         data: result
     })
@@ -25,8 +32,10 @@ const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFu
 const getAllWallets = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const result = await adminService.getAllWallets();
-    res.status(200).json({
+
+    sendResponse(res, {
         success: true,
+        statusCode: httpStatus.OK,
         message: "All Wallets retrieved successfully",
         data: result
     })
@@ -35,8 +44,10 @@ const getAllWallets = catchAsync(async (req: Request, res: Response, next: NextF
 const getAllTransactions = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const result = await adminService.getAllTransactions();
-    res.status(200).json({
+
+    sendResponse(res, {
         success: true,
+        statusCode: httpStatus.OK,
         message: "All Transactions retrieved successfully",
         data: result
     })

@@ -19,13 +19,13 @@ router.get("/",
 );
 
 router.patch(
-    "/approve/:id",
+    "/:id/approve",
     checkAuth(Role.ADMIN),
     agentRequestController.approveAgentRequest
 )
 
 router.patch(
-    "/suspend/:id",
+    "/:id/suspend",
     checkAuth(Role.ADMIN),
     agentRequestController.suspendAgent
 )

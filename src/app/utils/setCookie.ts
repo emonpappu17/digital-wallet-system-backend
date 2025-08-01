@@ -13,7 +13,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthToken) => {
         })
     }
     if (tokenInfo.refreshToken) {
-        res.cookie("accessToken", tokenInfo.refreshToken, {
+        res.cookie("refreshToken", tokenInfo.refreshToken, {
             httpOnly: true,
             secure: false
         })

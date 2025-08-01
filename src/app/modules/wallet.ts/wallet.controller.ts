@@ -22,7 +22,28 @@ const myWallet = catchAsync(async (req: Request, res: Response, next: NextFuncti
     })
 })
 
+const blockWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    const result = await walletService.blockWallet(id);
+    res.status(200).json({
+        success: true,
+        message: "Wallet blocked successfully",
+        data: result
+    })
+})
+const unblockWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params.id;
+    const result = await walletService.unblockWallet(id);
+    res.status(200).json({
+        success: true,
+        message: "Wallet unblocked successfully",
+        data: result
+    })
+})
+
 export const walletController = {
     fundAgentWallet,
-    myWallet
+    myWallet,
+    blockWallet,
+    unblockWallet
 }

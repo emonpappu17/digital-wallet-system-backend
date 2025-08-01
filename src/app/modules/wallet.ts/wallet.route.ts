@@ -8,33 +8,23 @@ import { fundAgentWalletZodSchema } from "./wallet.validation";
 const router = Router();
 
 router.post(
-    '/fund',
+    '/fund-agent',
     checkAuth(Role.ADMIN),
     validateRequest(fundAgentWalletZodSchema),
     walletController.fundAgentWallet
 )
 
-// router.post(
-//     '/block/:id',
-//     checkAuth(Role.ADMIN),
-// )
+router.post(
+    '/:id/block',
+    checkAuth(Role.ADMIN),
+    walletController.blockWallet
+)
 
-// router.post(
-//     '/unblock/:id',
-//     checkAuth(Role.ADMIN),
-// )
-
-// router.patch(
-//     "/wallets/:id/block",
-//     checkAuth(Role.ADMIN),
-//     walletController.blockWallet
-// );
-// router.patch(
-//     "/wallets/:id/unblock",
-//     checkAuth(Role.ADMIN),
-//     walletController.unblockWallet
-// );
-
+router.post(
+    '/:id/unblock',
+    checkAuth(Role.ADMIN),
+    walletController.unblockWallet
+)
 
 // use query builder
 router.get(

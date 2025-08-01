@@ -5,6 +5,8 @@ import { Wallet } from "../wallet.ts/wallet.model";
 import { ITransaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "./transaction.interface";
 import { Transaction } from "./transaction.model";
 import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
+import httpStatus from "http-status-codes"
+import AppError from "../../errorHelpers/AppError";
 
 interface ICashIn {
     userPhoneNumber: string,
@@ -24,12 +26,18 @@ const addMoney = async (userId: string, amount: number) => {
 
     try {
         session.startTransaction();
+
         const user = await User.findById(userId);
 
-        if (!user) throw new Error("User not found")
+        if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found")
 
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
-        if (!userWallet) throw new Error("User Wallet not found");
+
+        if (!userWallet) throw new AppError(httpStatus.NOT_FOUND, "User Wallet not found");
+
+        if (userWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.BAD_REQUEST, "User Wallet is blocked");
+        }
 
         userWallet.balance += amount;
         await userWallet.save();
@@ -62,10 +70,15 @@ const withdrawMoney = async (userId: string, amount: number) => {
         session.startTransaction();
         const user = await User.findById(userId);
 
-        if (!user) throw new Error("User not found")
+        if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found")
 
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
-        if (!userWallet) throw new Error("User wallet not found");
+
+        if (!userWallet) throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+
+        if (userWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.BAD_REQUEST, "User Wallet is blocked");
+        }
 
         userWallet.balance -= amount;
         await userWallet.save({ session })
@@ -99,16 +112,25 @@ const sendMoney = async (senderId: string, payload: ISendMoney) => {
         const sender = await User.findById(senderId).session(session);
         const receiver = await User.findOne({ phoneNumber: receiverPhoneNumber }).session(session);
 
-        if (receiver?.role !== Role.USER) throw new Error("Receiver is not a user account")
+        if (receiver?.role !== Role.USER) throw new AppError(httpStatus.BAD_REQUEST, "Receiver is not a user account")
 
-        if (!sender || !receiver) throw new Error("Sender or receiver not found");
-        if (sender._id.equals(receiver._id)) throw new Error("Cannot send money to yourself")
+        if (!sender || !receiver) throw new AppError(httpStatus.NOT_FOUND, "Sender or receiver not found");
+        if (sender._id.equals(receiver._id)) throw new AppError(httpStatus.BAD_REQUEST, "Cannot send money to yourself")
 
         const senderWallet = await Wallet.findOne({ user: senderId }).session(session);
         const receiverWallet = await Wallet.findOne({ user: receiver._id }).session(session);
 
-        if (!senderWallet || !receiverWallet) throw new Error("Wallet not found");
-        if (senderWallet.balance < amount) throw new Error("Insufficient balance")
+        if (!senderWallet || !receiverWallet) throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+
+        if (senderWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.BAD_REQUEST, "Sender Wallet is blocked");
+        }
+
+        if (receiverWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.BAD_REQUEST, "Receiver Wallet is blocked");
+        }
+
+        if (senderWallet.balance < amount) throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance");
 
         senderWallet.balance -= amount;
         receiverWallet.balance += amount;
@@ -144,19 +166,28 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
         session.startTransaction();
 
         const agent = await User.findById(agentId).session(session);
-        if (!agent) throw new Error("Agent not found");
-        if (agent.role !== Role.AGENT) throw new Error("This is not an agent account");
-        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
+        if (!agent) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+        if (agent.role !== Role.AGENT) throw new AppError(httpStatus.BAD_REQUEST, "This is not an agent account");
+        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin");
 
         const user = await User.findOne({ phoneNumber: userPhoneNumber }).session(session);
-        if (!user || user.role === Role.AGENT) throw new Error("User not found");
-        if (user.role !== Role.USER) throw new Error("This is not a user account");
+        if (!user || user.role === Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+        if (user.role !== Role.USER) throw new AppError(httpStatus.BAD_REQUEST, "This is not a user account");
 
         const agentWallet = await Wallet.findOne({ user: agentId }).session(session);
         const userWallet = await Wallet.findOne({ user: user._id }).session(session);
 
-        if (!userWallet || !agentWallet) throw new Error("Wallet not found")
-        if (agentWallet.balance < amount) throw new Error("Agent has insufficient balance")
+        if (!userWallet || !agentWallet) throw new AppError(httpStatus.NOT_FOUND, "Wallet not found")
+
+        if (agentWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.FORBIDDEN, "Agent Wallet is blocked");
+        }
+
+        if (userWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.FORBIDDEN, "User Wallet is blocked");
+        }
+
+        if (agentWallet.balance < amount) throw new AppError(httpStatus.BAD_REQUEST, "Agent has insufficient balance")
 
         agentWallet.balance -= amount;
         userWallet.balance += amount;
@@ -194,20 +225,29 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         session.startTransaction();
 
         const user = await User.findById(userId).session(session);
-        if (!user) throw new Error("User not found")
-        if (user.role !== Role.USER) throw new Error("This is not a user account")
+        if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found")
+        if (user.role !== Role.USER) throw new AppError(httpStatus.FORBIDDEN, "This is not a user account")
 
         const agent = await User.findOne({ phoneNumber: agentPhoneNumber }).session(session)
-        if (!agent || agent.role === Role.USER) throw new Error("Agent not found")
-        if (agent.role !== Role.AGENT) throw new Error("This is not an agent account");
+        if (!agent || agent.role === Role.USER) throw new AppError(httpStatus.NOT_FOUND, "Agent not found")
+        if (agent.role !== Role.AGENT) throw new AppError(httpStatus.FORBIDDEN, "This is not an agent account");
 
-        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new Error("Agent is suspended try another agent")
+        if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "Agent is suspended try another agent");
 
         const agentWallet = await Wallet.findOne({ user: agent._id }).session(session);
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
 
-        if (!userWallet || !agentWallet) throw new Error("Wallet not found")
-        if (userWallet.balance < amount) throw new Error("Insufficient balance")
+        if (!userWallet || !agentWallet) throw new AppError(httpStatus.NOT_FOUND, "Wallet not found")
+
+        if (agentWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.FORBIDDEN, "Agent Wallet is blocked");
+        }
+
+        if (userWallet.status === Status.BLOCKED as string) {
+            throw new AppError(httpStatus.FORBIDDEN, "User Wallet is blocked");
+        }
+
+        if (userWallet.balance < amount) throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance")
 
         agentWallet.balance += amount;
         userWallet.balance -= amount;
@@ -239,7 +279,7 @@ const cashOut = async (userId: string, payload: ICashOut) => {
 const getMyTransactionHistory = async (id: string) => {
     const user = await User.findById(id)
 
-    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new Error("You are suspended contract with admin")
+    if (user?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin")
 
     const userObjectId = new Types.ObjectId(id);
 
@@ -250,20 +290,10 @@ const getMyTransactionHistory = async (id: string) => {
         ]
     }).sort({ createdAt: -1 })
 
-    console.log({ transactions });
-
-    if (!transactions) throw new Error("Transactions not found")
+    if (!transactions) throw new AppError(httpStatus.NOT_FOUND, "Transactions not found")
 
     return transactions;
 }
-
-// const myTransaction = async (id: string) => {
-//     const user = await Transaction.findById(id);
-
-//     if (!user) throw new Error("Profile not found")
-
-//     return user;
-// }
 
 export const transactionService = {
     addMoney,
@@ -271,6 +301,5 @@ export const transactionService = {
     sendMoney,
     cashIn,
     cashOut,
-    // myTransaction,
     getMyTransactionHistory
 }
