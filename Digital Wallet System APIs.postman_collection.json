@@ -1,0 +1,846 @@
+{
+	"info": {
+		"_postman_id": "69993d19-fb65-4b4a-8f81-0b9baa751163",
+		"name": "Digital Wallet System APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43592956",
+		"_collection_link": "https://emon-9646668.postman.co/workspace/emon's-Workspace~46220dae-5a5d-4fa9-8705-cf82eed49d8d/collection/43592956-69993d19-fb65-4b4a-8f81-0b9baa751163?action=share&source=collection_link&creator=43592956"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Demo User 2\",\r\n    \"phoneNumber\": \"01766554445\",\r\n    \"password\": \"asdfQ123@\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/user/register",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Profile",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg5ZDM3NjVhNGNhN2RiMTkwMmY4MDQiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MDQ4NDgzLCJleHAiOjE3NTQxMzQ4ODN9.fYgtNTTtEf6ys8CXmhD6hMpdMuD5wFH9YkEE6hf-6vQ",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/v1/user/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"phoneNumber\": \"01622334455\",\r\n    \"password\": \"12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/auth/login",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg5ZDM3NjVhNGNhN2RiMTkwMmY4MDQiLCJwaG9uZU51bWJlciI6IjAxNjQ4MzgzNjA2Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MDMwOTQ4LCJleHAiOjE3NTQxMTczNDh9.sADJHv_OJrfYAIaR8p68Ht6PQiSZpcJSek1GsMtqQJ4",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentNumber\": \"01977766688\",\r\n    \"amount\": 50000\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:4000/api/v1/auth/logout",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "4000",
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Agent Request",
+			"item": [
+				{
+					"name": "Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg5ZDM3NjVhNGNhN2RiMTkwMmY4MDQiLCJwaG9uZU51bWJlciI6IjAxNjQ4MzgzNjA2Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzUzODc1NDIzLCJleHAiOjE3NTM5NjE4MjN9.mfrep7egI84pIq3pZ66KIFnbrSHWYwwkEhKz_3qrlFg",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Demo Agent\",\r\n    \"phoneNumber\": \"01977766688\",\r\n    \"password\": \"asdfQ123@\",\r\n    \"tradeLicenseNumber\": \"ldsfk050fe2sdf234\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/agent-requests",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agent-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all Agent Request",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE2NDgxLCJleHAiOjE3NTQyMDI4ODF9.CG39MTCfCMsz1CvEGX4zzj559SeFcMbh1pP2DSzkFh0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/agent-requests",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agent-requests"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Agent",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE2NDgxLCJleHAiOjE3NTQyMDI4ODF9.CG39MTCfCMsz1CvEGX4zzj559SeFcMbh1pP2DSzkFh0",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Rofik Miya\",\r\n    \"phoneNumber\": \"01846549901\",\r\n    \"password\": \"asdfQ123@\",\r\n    \"tradeLicenseNumber\": \"ldsfk050f\"\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/agent-requests/688db158a80f46ba563abfc4/approve",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agent-requests",
+								"688db158a80f46ba563abfc4",
+								"approve"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Suspend Agent",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkOTQ3YmU4ZDM0YWU5ZTcwZmVlNWQiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTExMjEwLCJleHAiOjE3NTQxOTc2MTB9.fYHLNfDJS1tVq617WadcxiKN2lYk7iiMaAg6zqc9_iU",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/agent-requests/688d95a66ae1c76a806da23b/suspend",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agent-requests",
+								"688d95a66ae1c76a806da23b",
+								"suspend"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wallet",
+			"item": [
+				{
+					"name": "Add Agent Balance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg5ZDM3NjVhNGNhN2RiMTkwMmY4MDQiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MDQ4NDgzLCJleHAiOjE3NTQxMzQ4ODN9.fYgtNTTtEf6ys8CXmhD6hMpdMuD5wFH9YkEE6hf-6vQ",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentNumber\": \"01977766688\",\r\n    \"amount\": 5000\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/wallet/fund-agent",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"fund-agent"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Wallet",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkOWIwNDZhZTFjNzZhODA2ZGEyNGQiLCJwaG9uZU51bWJlciI6IjAxNzY1ODg3NjU4Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTE0OTksImV4cCI6MTc1NDE5Nzg5OX0.2sL_KlBuWlb5rVG2eV9vJu5Fa1d6tJgrqrxyc3CYD_w",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/wallet/my",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"my"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/wallet/688db296a80f46ba563abfe5/block",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"688db296a80f46ba563abfe5",
+								"block"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock Wallet",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/wallet/688db296a80f46ba563abfe5/unblock",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallet",
+								"688db296a80f46ba563abfe5",
+								"unblock"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction",
+			"item": [
+				{
+					"name": "Add Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmMiLCJwaG9uZU51bWJlciI6IjAxNzc3NjY4ODc5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTY2MTcsImV4cCI6MTc1NDIwMzAxN30.TmWMW9FJ1nwoqCKSDEmwcEtWVLEd9FCVWH8vu6pxOlw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"amount\": 500\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/add-money",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"add-money"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Withdraw Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmMiLCJwaG9uZU51bWJlciI6IjAxNzc3NjY4ODc5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTY2MTcsImV4cCI6MTc1NDIwMzAxN30.TmWMW9FJ1nwoqCKSDEmwcEtWVLEd9FCVWH8vu6pxOlw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"amount\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/withdraw",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"withdraw"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Money",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmMiLCJwaG9uZU51bWJlciI6IjAxNzc3NjY4ODc5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTY2MTcsImV4cCI6MTc1NDIwMzAxN30.TmWMW9FJ1nwoqCKSDEmwcEtWVLEd9FCVWH8vu6pxOlw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"receiverPhoneNumber\": \"01766554432\",\r\n    \"amount\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/send-money",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"send-money"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "My Transaction History",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmMiLCJwaG9uZU51bWJlciI6IjAxNzc3NjY4ODc5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTY2MTcsImV4cCI6MTc1NDIwMzAxN30.TmWMW9FJ1nwoqCKSDEmwcEtWVLEd9FCVWH8vu6pxOlw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/my",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"my"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cash In",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjFiN2E4MGY0NmJhNTYzYWJmY2MiLCJwaG9uZU51bWJlciI6IjAxOTc3NzY2Njg4Iiwicm9sZSI6IkFHRU5UIiwiaWF0IjoxNzU0MTE2OTcwLCJleHAiOjE3NTQyMDMzNzB9.jWFRUnUp2knVpna6tEzSNmzySJAHEQW-XplKbZypTj8",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userPhoneNumber\": \"01766554432\",\r\n    \"amount\": 500\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/cash-in",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"cash-in"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cash Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmMiLCJwaG9uZU51bWJlciI6IjAxNzc3NjY4ODc5Iiwicm9sZSI6IlVTRVIiLCJpYXQiOjE3NTQxMTcyNTIsImV4cCI6MTc1NDIwMzY1Mn0.aWE57ZcUgHOTCriQd8SD_ZC9uiGWuLpn26C6goXvZeM",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01977766688\",\r\n    \"amount\": 100\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/cash-out",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"cash-out"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Agent Commissions",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkOTVhNjZhZTFjNzZhODA2ZGEyM2IiLCJwaG9uZU51bWJlciI6IjAxOTc3NzY2Njg4Iiwicm9sZSI6IkFHRU5UIiwiaWF0IjoxNzU0MTExMTI2LCJleHAiOjE3NTQxOTc1MjZ9.ti0KvUUFpUP-Km67zUHevqhNl41DKZJ4hVdjtO7a1hI",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01977766688\",\r\n    \"amount\": 80\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/transactions/agent-commissions",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"agent-commissions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get All Users",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/admin/users",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Wallets",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/admin/wallets",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"wallets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Agents",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/admin/agents",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"agents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Transactions",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODhkYjBmYWE4MGY0NmJhNTYzYWJmYmEiLCJwaG9uZU51bWJlciI6IjAxNjIyMzM0NDU1Iiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzU0MTE3MzM1LCJleHAiOjE3NTQyMDM3MzV9.0SvA2KIhwzJCD4z2po7d7VKzAht8phw30KnX8pGbG20",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"agentPhoneNumber\": \"01846549901\",\r\n    \"amount\": 300\r\n}"
+						},
+						"url": {
+							"raw": "https://digital-wallet-system-backend-gamma.vercel.app/api/v1/admin/transactions",
+							"protocol": "https",
+							"host": [
+								"digital-wallet-system-backend-gamma",
+								"vercel",
+								"app"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"transactions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
