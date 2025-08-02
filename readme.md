@@ -19,7 +19,7 @@ A secure and scalable digital wallet system inspired by **bKash**. Built using *
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/digital-wallet-system.git
+https://github.com/emonpappu17/digital-wallet-system-backend.git
 cd digital-wallet-system
 ```
 
