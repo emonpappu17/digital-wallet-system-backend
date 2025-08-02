@@ -66,7 +66,7 @@ const approveAgentRequest = async (id: string) => {
 
     await Wallet.create({
         user: agentUser._id,
-        balance: 0
+        balance: 50
     })
 
     const { password, ...rest } = agentUser.toObject();

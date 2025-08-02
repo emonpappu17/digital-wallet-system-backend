@@ -6,7 +6,7 @@ import { Wallet } from "../wallet.ts/wallet.model"
 import httpStatus from "http-status-codes"
 
 const getAllUsers = async () => {
-    const users = await User.find({ role: Role.USER }).select("-password")
+    const users = await User.find({ role: Role.USER }).select("-password").sort({ createdAt: -1 })
 
     if (!users) throw new AppError(httpStatus.NOT_FOUND, "Users not found")
 
@@ -14,7 +14,7 @@ const getAllUsers = async () => {
 }
 
 const getAllAgents = async () => {
-    const agents = await User.find({ role: Role.AGENT }).select("-password")
+    const agents = await User.find({ role: Role.AGENT }).select("-password").sort({ createdAt: -1 })
 
     if (!agents) throw new AppError(httpStatus.NOT_FOUND, "Agents not found")
 
@@ -22,7 +22,7 @@ const getAllAgents = async () => {
 }
 
 const getAllWallets = async () => {
-    const wallets = await Wallet.find().populate("user", "name phoneNumber role")
+    const wallets = await Wallet.find().populate("user", "name phoneNumber role").sort({ createdAt: -1 })
 
     if (!wallets) throw new AppError(httpStatus.NOT_FOUND, "Wallets not found")
 
@@ -30,7 +30,7 @@ const getAllWallets = async () => {
 }
 
 const getAllTransactions = async () => {
-    const transactions = await Transaction.find()
+    const transactions = await Transaction.find().sort({ createdAt: -1 })
 
     if (!transactions) throw new AppError(httpStatus.NOT_FOUND, "Transactions not found")
 

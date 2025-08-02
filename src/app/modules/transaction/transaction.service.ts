@@ -245,8 +245,6 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         const totalDeduction = amount + fee;
         const agentCommission = (amount * FEE_CONFIG.agentCommissionPercent) / 100;
 
-        console.log({ fee, totalDeduction, agentCommission });
-
         const agentWallet = await Wallet.findOne({ user: agent._id }).session(session);
         const userWallet = await Wallet.findOne({ user: userId }).session(session);
 

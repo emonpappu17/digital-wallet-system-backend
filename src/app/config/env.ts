@@ -10,11 +10,13 @@ interface EnvConfig {
     JWT_ACCESS_SECRET: string,
     JWT_ACCESS_EXPIRES: string,
     JWT_REFRESH_SECRET: string,
-    JWT_REFRESH_EXPIRES: string
+    JWT_REFRESH_EXPIRES: string,
+    ADMIN_PHONE_NUMBER: string,
+    ADMIN_PASSWORD: string
 }
 
 const loadEnvVariables = (): EnvConfig => {
-    const requiredVariables: string[] = ["PORT", "DB_URL", "BCRYPT_SALT_ROUND", "NODE_ENV", "JWT_ACCESS_SECRET", "JWT_ACCESS_EXPIRES", "JWT_REFRESH_SECRET", "JWT_REFRESH_EXPIRES"]
+    const requiredVariables: string[] = ["PORT", "DB_URL", "BCRYPT_SALT_ROUND", "NODE_ENV", "JWT_ACCESS_SECRET", "JWT_ACCESS_EXPIRES", "JWT_REFRESH_SECRET", "JWT_REFRESH_EXPIRES", "ADMIN_PHONE_NUMBER", "ADMIN_PASSWORD"]
 
     requiredVariables.forEach(key => {
         if (!process.env[key]) {
@@ -30,7 +32,9 @@ const loadEnvVariables = (): EnvConfig => {
         JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET as string,
         JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES as string,
         JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET as string,
-        JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES as string
+        JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES as string,
+        ADMIN_PHONE_NUMBER: process.env.ADMIN_PHONE_NUMBER as string,
+        ADMIN_PASSWORD: process.env.ADMIN_PASSWORD as string
     }
 }
 
