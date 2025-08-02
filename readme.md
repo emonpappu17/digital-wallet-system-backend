@@ -69,45 +69,70 @@ http://localhost:4000/api/v1
 
 ---
 
-## 📌 Features Implemented
+# **API Endpoints Summary**
 
-### ✅ User Authentication
+## **Authentication (`/api/v1/auth`)**
 
-- **Register**: `/user/register`
-- **Login**: `/auth/login`
-- **Logout**: `/auth/logout`
-- **Profile**: `/user/me`
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/login` | POST | Log in a user | Public | `{"phoneNumber": "01622334455", "password": "12345678"}` |
+| `/logout` | POST | Invalidate session token | User, Agent, Admin | - |
 
-### 💰 Wallet
+---
 
-- **View My Wallet**: `/wallet/my`
-- **Admin Fund Agent**: `/wallet/fund-agent`
-- **Admin Block/Unblock Wallet**: `/wallet/:walletId/block` / `/wallet/:walletId/unblock`
+## **User Management (`/api/v1/user`)**
 
-### 🔁 Transactions
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/register` | POST | Register new user | Public | `{"name": "John Doe", "phoneNumber": "01711223344", "password": "Pass123@"}` |
+| `/me` | GET | Get user profile | User, Agent, Admin | - |
 
-- **User Add Money**: `/transactions/add-money`
-- **User Withdraw**: `/transactions/withdraw`
-- **User Send Money**: `/transactions/send-money`
-- **Cash In** *(Agent → User)*: `/transactions/cash-in`
-- **Cash Out** *(User → Agent)*: `/transactions/cash-out`
-- **View My Transactions**: `/transactions/my`
-- **View Agent Commissions**: `/transactions/agent-commissions`
+---
 
-### 🧑‍💼 Admin Panel
+## **Wallet Operations (`/api/v1/wallet`)**
 
-- **View All Users**: `/admin/users`
-- **View All Agents**: `/admin/agents`
-- **View All Wallets**: `/admin/wallets`
-- **View All Transactions**: `/admin/transactions`
-- **Block/Unblock Wallets**
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/my` | GET | Get wallet balance | User, Agent | - |
+| `/fund-agent` | POST | Add balance to agent | Admin | `{"agentNumber": "01988776655", "amount": 5000}` |
+| `/:walletId/block` | POST | Block wallet | Admin | - |
+| `/:walletId/unblock` | POST | Unblock wallet | Admin | - |
 
-### 🧾 Agent Request
+---
 
-- **Request to become Agent**: `/agent-requests`
-- **Admin Approve Agent**: `/agent-requests/:id/approve`
-- **Admin Suspend Agent**: `/agent-requests/suspend/:id`
-- **Admin View All Requests**: `/agent-requests`
+## **Transactions (`/api/v1/transactions`)**
+
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/add-money` | POST | Add money to wallet | User | `{"amount": 1000}` |
+| `/send-money` | POST | Send money to user | User | `{"receiverPhoneNumber": "01766554432", "amount": 500}` |
+| `/withdraw` | POST | Withdraw money | User | `{"amount": 300}` |
+| `/cash-in` | POST | Agent adds money | Agent | `{"userPhoneNumber": "01711223344", "amount": 1000}` |
+| `/cash-out` | POST | Withdraw via agent | User | `{"agentPhoneNumber": "01988776655", "amount": 500}` |
+| `/my` | GET | Transaction history | User, Agent | - |
+| `/agent-commissions` | GET | Commission history | Agent | - |
+
+---
+
+## **Agent Requests (`/api/v1/agent-requests`)**
+
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/` | POST | Submit application | User | `{"name": "Agent Smith", "phoneNumber": "01988776655", "password": "asdfQ123@", "tradeLicenseNumber": "TRADE12345"}` |
+| `/` | GET | List requests | Admin | - |
+| `/:requestId/approve` | PATCH | Approve request | Admin | - |
+| `/:requestId/suspend` | PATCH | Suspend agent | Admin | - |
+
+---
+
+## **Admin Dashboard (`/api/v1/admin`)**
+
+| Endpoint | Method | Description | Required Role(s) | Request Body Example |
+| --- | --- | --- | --- | --- |
+| `/users` | GET | List all users | Admin | - |
+| `/wallets` | GET | List all wallets | Admin | - |
+| `/agents` | GET | List all agents | Admin | - |
+| `/transactions` | GET | All transactions | Admin | - |
 
 ---
 
