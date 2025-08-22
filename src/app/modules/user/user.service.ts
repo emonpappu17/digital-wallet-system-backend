@@ -8,16 +8,19 @@ import bcryptjs from 'bcryptjs';
 import httpStatus from "http-status-codes"
 
 const createUser = async (payload: IUser) => {
-    const { phoneNumber, password, ...rest } = payload;
+    const { phoneNumber, password, email, ...rest } = payload;
 
-    const isUserExist = await User.findOne({ phoneNumber })
+    const isUserExist = await User.findOne({
+        $or: [{ phoneNumber }, { email }]
+    })
 
-    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "Phone number already exists");
+    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "User already exists");
 
     const hashedPassword = await bcryptjs.hash(password, Number(envVars.BCRYPT_SALT_ROUND))
 
     const user = await User.create({
         phoneNumber,
+        email,
         password: hashedPassword,
         ...rest
     })

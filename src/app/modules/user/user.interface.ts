@@ -16,6 +16,7 @@ export enum Status {
 export interface IUser {
     name: string,
     phoneNumber: string,
+    email: string,
     password: string,
     role: Role,
     status: Status
