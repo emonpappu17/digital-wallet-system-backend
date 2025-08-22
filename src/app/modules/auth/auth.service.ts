@@ -8,11 +8,16 @@ import AppError from '../../errorHelpers/AppError';
 import httpStatus from "http-status-codes"
 
 const login = async (payload: Partial<IUser>) => {
-    const { phoneNumber, password } = payload;
+    const { phoneNumber, email, password } = payload;
 
-    const user = await User.findOne({ phoneNumber })
+    console.log({ payload });
 
-    if (!user) throw new AppError(httpStatus.NOT_FOUND, "This Number is not exists")
+    // const user = await User.findOne({ phoneNumber })
+    const user = await User.findOne({
+        $or: [{ phoneNumber }, { email }]
+    })
+
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "This User is not exists")
 
     const isPasswordMatched = await bcrypt.compare(password as string, user.password)
 

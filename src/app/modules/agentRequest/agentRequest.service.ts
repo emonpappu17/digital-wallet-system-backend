@@ -10,21 +10,31 @@ import httpStatus from "http-status-codes"
 
 
 const createAgentRequest = async (payload: Partial<IAgentRequest>) => {
-    const { phoneNumber, password, ...rest } = payload;
+    const { phoneNumber, password, email, ...rest } = payload;
 
-    const isUserExist = await User.findOne({ phoneNumber })
+    console.log({ payload });
+
+    // const isUserExist = await User.findOne({ phoneNumber })
+    const isUserExist = await User.findOne({
+        $or: [{ phoneNumber }, { email }]
+    })
+
+    console.log({ isUserExist });
 
     if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "You are already Agent!!")
 
-    const isAgentExist = await AgentRequest.findOne({ phoneNumber })
+    const isAgentExist = await AgentRequest.findOne({
+        $or: [{ phoneNumber }, { email }]
+    })
 
-    if (isAgentExist) throw new AppError(httpStatus.BAD_REQUEST, "You have already requested!!")
+    if (isAgentExist) throw new AppError(httpStatus.BAD_REQUEST, "You have already requested to become Agent!!")
 
     const hashedPassword = await bcrypt.hash(password as string, Number(envVars.BCRYPT_SALT_ROUND))
 
     const agentRequest = await AgentRequest.create({
         phoneNumber,
         password: hashedPassword,
+        email,
         ...rest
     })
 

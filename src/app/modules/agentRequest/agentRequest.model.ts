@@ -13,12 +13,15 @@ const agentRequestSchema = new Schema<IAgentRequest>({
     password: {
         type: String
     },
-    tradeLicenseNumber: {
+    email: {
         type: String,
-        required: true,
-        unique: true
+        required: true
+    }
+    ,
+    shopName: {
+        type: String
     },
-    address: {
+    nidNumber: {
         type: String
     },
     status: {

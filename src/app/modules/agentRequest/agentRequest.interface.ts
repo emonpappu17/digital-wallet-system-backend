@@ -7,9 +7,10 @@ export enum AgentRequestStatus {
 
 export interface IAgentRequest {
     name: string,
+    email: string,
     phoneNumber: string,
     password: string,
-    tradeLicenseNumber: string,
-    address: string,
+    nidNumber: string,
+    shopName: string,
     status: AgentRequestStatus
 }

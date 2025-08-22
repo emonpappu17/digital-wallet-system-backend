@@ -10,6 +10,8 @@ import httpStatus from "http-status-codes"
 const createUser = async (payload: IUser) => {
     const { phoneNumber, password, email, ...rest } = payload;
 
+    console.log({ payload });
+
     const isUserExist = await User.findOne({
         $or: [{ phoneNumber }, { email }]
     })

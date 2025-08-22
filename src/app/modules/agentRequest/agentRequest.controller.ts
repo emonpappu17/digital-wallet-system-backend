@@ -8,8 +8,16 @@ import httpStatus from "http-status-codes"
 const createAgentRequest = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     const result = await agentRequestService.createAgentRequest(req.body);
-    res.status(200).json({
+
+    // res.status(200).json({
+    //     success: true,
+    //     message: "Request created successful wait for Admin approval",
+    //     data: result
+    // })
+
+    sendResponse(res, {
         success: true,
+        statusCode: httpStatus.OK,
         message: "Request created successful wait for Admin approval",
         data: result
     })
