@@ -18,6 +18,8 @@ export const createAdmin = async () => {
         const payload: IUser = {
             name: "Admin Man",
             password: hashedPassword,
+            photo: "https://github.com/shadcn.png",
+            email: "admin@gmail.com",
             phoneNumber: envVars.ADMIN_PHONE_NUMBER,
             role: Role.ADMIN,
             status: Status.ACTIVE
