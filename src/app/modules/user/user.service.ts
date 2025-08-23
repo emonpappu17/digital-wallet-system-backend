@@ -1,8 +1,9 @@
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
 import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
+import { AgentRequest } from "../agentRequest/agentRequest.model";
 import { Wallet } from "../wallet.ts/wallet.model";
-import { IUser } from "./user.interface"
+import { IUser, Role } from "./user.interface"
 import { User } from "./user.model";
 import bcryptjs from 'bcryptjs';
 import httpStatus from "http-status-codes"
@@ -16,7 +17,13 @@ const createUser = async (payload: IUser) => {
         $or: [{ phoneNumber }, { email }]
     })
 
-    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "User already exists");
+    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "Account already exists");
+
+    const isAgentExist = await AgentRequest.findOne({
+        $or: [{ phoneNumber }, { email }]
+    })
+
+    if (isAgentExist) throw new AppError(httpStatus.BAD_REQUEST, "This credential is already using for Agent")
 
     const hashedPassword = await bcryptjs.hash(password, Number(envVars.BCRYPT_SALT_ROUND))
 

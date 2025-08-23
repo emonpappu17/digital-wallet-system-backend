@@ -19,6 +19,8 @@ export interface IUser {
     email: string,
     password: string,
     role: Role,
-    photo: string,
+    photo?: string,
     status: Status
+    nidNumber?: string,
+    shopName?: string,
 }

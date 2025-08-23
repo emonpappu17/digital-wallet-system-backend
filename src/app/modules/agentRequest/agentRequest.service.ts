@@ -12,16 +12,16 @@ import httpStatus from "http-status-codes"
 const createAgentRequest = async (payload: Partial<IAgentRequest>) => {
     const { phoneNumber, password, email, ...rest } = payload;
 
-    console.log({ payload });
+    // console.log({ payload });
 
     // const isUserExist = await User.findOne({ phoneNumber })
     const isUserExist = await User.findOne({
         $or: [{ phoneNumber }, { email }]
     })
 
-    console.log({ isUserExist });
-
-    if (isUserExist) throw new AppError(httpStatus.BAD_REQUEST, "You are already Agent!!")
+    // console.log({ isUserExist });
+    if (isUserExist?.role === Role.USER) throw new AppError(httpStatus.BAD_REQUEST, "This credentials have User account, can not send Agent request")
+    if (isUserExist?.role === Role.AGENT) throw new AppError(httpStatus.BAD_REQUEST, "You are already Agent!")
 
     const isAgentExist = await AgentRequest.findOne({
         $or: [{ phoneNumber }, { email }]
@@ -61,6 +61,13 @@ const approveAgentRequest = async (id: string) => {
         return request
     }
 
+    // const agentReq = await AgentRequest.findById(id);
+
+    // const isUserExist = await User.findOne({
+    //     $or: [{ phoneNumber: agentReq?.phoneNumber }, { email: agentReq?.email }]
+    // })
+
+
     const request = await AgentRequest.findByIdAndUpdate(id, { status: AgentRequestStatus.APPROVED })
 
     if (!request) throw new AppError(httpStatus.NOT_FOUND, "Request not found")
@@ -69,6 +76,9 @@ const approveAgentRequest = async (id: string) => {
 
     const agentUser = await User.create({
         name: request.name,
+        email: request.email,
+        shopName: request.shopName,
+        nidNumber: request.nidNumber,
         phoneNumber: request.phoneNumber,
         password: request.password,
         role: Role.AGENT,
@@ -91,9 +101,15 @@ const suspendAgent = async (id: string) => {
 
     const admin = await User.findById(id);
 
-    if (admin?.role === Role.ADMIN) throw new AppError(httpStatus.FORBIDDEN, "Admin cannot be suspend!!")
+    if (user?.role === Role.ADMIN) throw new AppError(httpStatus.FORBIDDEN, "Admin cannot be suspend!!")
 
     const agent = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.SUSPEND }, { new: true }).select("-password")
+
+
+    const update = await AgentRequest.findOneAndUpdate({
+        $or: [{ phoneNumber: agent?.phoneNumber }, { email: agent?.email }]
+    }, { status: AgentRequestStatus.SUSPEND }, { new: true })
+
 
     if (!agent || agent.role !== Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "Agent not found")
     return agent;

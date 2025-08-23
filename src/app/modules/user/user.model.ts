@@ -24,9 +24,12 @@ const userSchema = new Schema<IUser>(
         photo: {
             type: String,
         },
-        // password: {
-        //     type: String,
-        // },
+        nidNumber: {
+            type: String,
+        },
+        shopName: {
+            type: String,
+        },
         role: {
             type: String,
             enum: Object.values(Role),
