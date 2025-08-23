@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { Error } from "mongoose";
 import { envVars } from "../../config/env";
 import { generateToken } from "../../utils/jwt";
-import { IUser } from "../user/user.interface";
+import { IUser, Status } from "../user/user.interface";
 import { User } from "../user/user.model";
 import AppError from '../../errorHelpers/AppError';
 import httpStatus from "http-status-codes"
@@ -17,7 +17,7 @@ const login = async (payload: Partial<IUser>) => {
         $or: [{ phoneNumber }, { email }]
     })
 
-    if (!user) throw new AppError(httpStatus.NOT_FOUND, "This User is not exists")
+    if (!user || user.status === Status.PENDING) throw new AppError(httpStatus.NOT_FOUND, "This User is not exists")
 
     const isPasswordMatched = await bcrypt.compare(password as string, user.password)
 

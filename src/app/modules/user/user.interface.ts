@@ -8,7 +8,6 @@ export enum Status {
     ACTIVE = "ACTIVE",
     BLOCKED = "BLOCKED",
     PENDING = "PENDING",
-    APPROVED = "APPROVED",
     REJECTED = "REJECTED",
     SUSPEND = "SUSPEND"
 }

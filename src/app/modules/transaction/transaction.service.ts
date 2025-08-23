@@ -169,8 +169,13 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
         session.startTransaction();
 
         const agent = await User.findById(agentId).session(session);
+
         if (!agent) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+
+        if (agent?.status === Status.PENDING as string) throw new AppError(httpStatus.FORBIDDEN, "Account is pending state");
+
         if (agent.role !== Role.AGENT) throw new AppError(httpStatus.BAD_REQUEST, "This is not an agent account");
+
         if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "You are suspended contract with admin");
 
         const user = await User.findOne({ phoneNumber: userPhoneNumber }).session(session);
@@ -236,7 +241,11 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         if (user.role !== Role.USER) throw new AppError(httpStatus.FORBIDDEN, "This is not a user account")
 
         const agent = await User.findOne({ phoneNumber: agentPhoneNumber }).session(session);
+
+        if (agent?.status === Status.PENDING as string) throw new AppError(httpStatus.FORBIDDEN, "Account is pending");
+
         if (!agent || agent.role === Role.USER) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+
         if (agent.role !== Role.AGENT) throw new AppError(httpStatus.FORBIDDEN, "This is not an agent account");
 
         if (agent?.status === AgentRequestStatus.SUSPEND as string) throw new AppError(httpStatus.FORBIDDEN, "Agent is suspended try another agent");

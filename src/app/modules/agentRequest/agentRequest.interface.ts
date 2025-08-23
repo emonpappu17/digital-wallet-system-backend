@@ -1,6 +1,6 @@
 export enum AgentRequestStatus {
     PENDING = "PENDING",
-    APPROVED = "APPROVED",
+    ACTIVE = "ACTIVE",
     REJECTED = "REJECTED",
     SUSPEND = "SUSPEND"
 }
