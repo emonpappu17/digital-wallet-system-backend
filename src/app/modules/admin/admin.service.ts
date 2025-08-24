@@ -63,7 +63,7 @@ const getAllAgents = async () => {
                             }
                         }
                     },
-                    { $project: { amount: 1, agentCommission: 1 } }
+                    { $project: { amount: 1, agentCommission: 1, createdAt: 1 } }
                 ],
                 as: "transactions",
             }
@@ -95,7 +95,7 @@ const getAllAgents = async () => {
             $project: {
                 password: 0,
                 wallet: 0,
-                transactions: 0
+                // transactions: 0
             }
         },
         // Step-7
@@ -105,7 +105,7 @@ const getAllAgents = async () => {
 
     const agentsWithStats = await User.aggregate(pipeline).exec();
 
-    // console.log('agentsWithStats==>', agentsWithStats); //users
+    console.log('agentsWithStats==>', agentsWithStats); //users
 
     return agentsWithStats;
 }
