@@ -18,8 +18,8 @@ const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFun
 
 
 const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-
-    const result = await adminService.getAllAgents();
+    const query = req.query;
+    const result = await adminService.getAllAgents(query as Record<string, string>);
 
     sendResponse(res, {
         success: true,
