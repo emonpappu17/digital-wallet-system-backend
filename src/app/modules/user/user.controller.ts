@@ -36,7 +36,38 @@ const myProfile = catchAsync(async (req: Request, res: Response, next: NextFunct
 
 })
 
+const unblockUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const { id } = req.params;
+
+    const result = await UserService.unblockUser(id)
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User unblocked Successfully",
+        data: result
+    })
+})
+
+const blockUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const { id } = req.params;
+
+    const result = await UserService.blockUser(id)
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User blocked Successfully",
+        data: result
+    })
+})
+
+
 export const UserController = {
     createUser,
-    myProfile
+    myProfile,
+    blockUser,
+    unblockUser
 }

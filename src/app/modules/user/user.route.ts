@@ -13,6 +13,19 @@ router.post(
     UserController.createUser
 )
 
+
+router.patch(
+    "/:id/block",
+    checkAuth(Role.ADMIN),
+    UserController.blockUser
+)
+
+router.patch(
+    "/:id/unblock",
+    checkAuth(Role.ADMIN),
+    UserController.unblockUser
+)
+
 router.get(
     "/me",
     checkAuth(...Object.values(Role)),

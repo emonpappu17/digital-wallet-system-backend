@@ -3,7 +3,7 @@ import AppError from "../../errorHelpers/AppError";
 import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import { AgentRequest } from "../agentRequest/agentRequest.model";
 import { Wallet } from "../wallet.ts/wallet.model";
-import { IUser, Role } from "./user.interface"
+import { IUser, Role, Status } from "./user.interface"
 import { User } from "./user.model";
 import bcryptjs from 'bcryptjs';
 import httpStatus from "http-status-codes"
@@ -52,7 +52,34 @@ const myProfile = async (id: string) => {
     return user;
 }
 
+const unblockUser = async (id: string) => {
+    const user = await User.findOne({ _id: id, role: Role.USER }).select("-password");
+
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+
+    user.status = Status.ACTIVE;
+
+    await user.save()
+
+    return user;
+}
+
+const blockUser = async (id: string) => {
+    const user = await User.findOne({ _id: id, role: Role.USER }).select("-password");
+
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+
+    // const updatedUser = await User.findByIdAndUpdate(id, { status: Status.BLOCKED }, { new: true }).select("-password")
+    user.status = Status.BLOCKED
+    await user.save()
+
+    return user;
+    // return updatedUser;
+}
+
 export const UserService = {
     createUser,
-    myProfile
+    myProfile,
+    blockUser,
+    unblockUser
 }

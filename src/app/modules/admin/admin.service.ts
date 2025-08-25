@@ -19,11 +19,7 @@ const getAllAgents = async (query: Record<string, string>) => {
     const minBalance = query.minBalance ? parseFloat(query.minBalance) : undefined;
     const maxBalance = query.maxBalance ? parseFloat(query.maxBalance) : undefined;
     const minCommission = query.minCommission ? parseFloat(query.minCommission) : undefined;
-    const maxCommission = query.maxCommission ? parseFloat(query.maxCommission) : undefined;
-    const minTransactionCount = query.minTransactionCount ? parseInt(query.minTransactionCount) : undefined;
-    const maxTransactionCount = query.maxTransactionCount ? parseInt(query.maxTransactionCount) : undefined;
-    const minTransactionVolume = query.minTransactionVolume ? parseFloat(query.minTransactionVolume) : undefined;
-    const maxTransactionVolume = query.maxTransactionVolume ? parseFloat(query.maxTransactionVolume) : undefined;
+
 
     const skip = (page - 1) * limit;
     const walletCollName = Wallet.collection.name;
@@ -129,11 +125,6 @@ const getAllAgents = async (query: Record<string, string>) => {
                 ...(minBalance !== undefined && { balance: { $gte: minBalance } }),
                 ...(maxBalance !== undefined && { balance: { $lte: maxBalance } }),
                 ...(minCommission !== undefined && { commission: { $gte: minCommission } }),
-                ...(maxCommission !== undefined && { commission: { $lte: maxCommission } }),
-                ...(minTransactionCount !== undefined && { transactionsCount: { $gte: minTransactionCount } }),
-                ...(maxTransactionCount !== undefined && { transactionsCount: { $lte: maxTransactionCount } }),
-                ...(minTransactionVolume !== undefined && { transactionVolume: { $gte: minTransactionVolume } }),
-                ...(maxTransactionVolume !== undefined && { transactionVolume: { $lte: maxTransactionVolume } })
             }
         },
 
@@ -274,8 +265,8 @@ const getAllAgents = async (query: Record<string, string>) => {
             currentPage: page,
             totalPages,
             totalCount,
-            hasNext: page < totalPages,
-            hasPrev: page > 1,
+            // hasNext: page < totalPages,
+            // hasPrev: page > 1,
             limit
         },
         statistics: {
@@ -289,17 +280,264 @@ const getAllAgents = async (query: Record<string, string>) => {
     };
 };
 
-///////////////////////////////////////
+const getAllUsers = async (query: Record<string, string>) => {
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+    const search = query.search;
+    const status = query.status;
+    const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
+    const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
 
+    const skip = (page - 1) * limit;
+    const walletCollName = Wallet.collection.name;
+    const txCollName = Transaction.collection.name;
 
+    // Build match conditions
+    const matchConditions: any = { role: Role.USER };
 
-const getAllUsers = async () => {
-    const users = await User.find({ role: Role.USER }).select("-password").sort({ createdAt: -1 })
+    // Add search functionality
+    if (search) {
+        matchConditions.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { phoneNumber: { $regex: search, $options: 'i' } },
+        ];
+    }
 
-    if (!users) throw new AppError(httpStatus.NOT_FOUND, "Users not found")
+    // Add status filter
+    if (status) {
+        matchConditions.status = status;
+    }
 
-    return users;
+    // Add date range filter
+    if (dateFrom || dateTo) {
+        matchConditions.createdAt = {};
+        if (dateFrom) matchConditions.createdAt.$gte = new Date(dateFrom);
+        if (dateTo) matchConditions.createdAt.$lte = new Date(dateTo);
+    }
+
+    const pipeline: mongoose.PipelineStage[] = [
+        // Step-1: Initial match
+        { $match: matchConditions },
+
+        // Step-2: Lookup wallet
+        {
+            $lookup: {
+                from: walletCollName,
+                localField: "_id",
+                foreignField: "user",
+                as: "wallet"
+            }
+        },
+
+        // Step-3: Unwind wallet
+        {
+            $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
+        },
+
+        // Step-4: Lookup transactions
+        {
+            $lookup: {
+                from: txCollName,
+                let: { userId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$status", "COMPLETED"] },
+                                    {
+                                        $or: [
+                                            { $eq: ["$from", "$$userId"] },
+                                            { $eq: ["$to", "$$userId"] },
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { amount: 1, createdAt: 1 } }
+                ],
+                as: "transactions",
+            }
+        },
+
+        // Step-5: Add calculated fields
+        {
+            $addFields: {
+                transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
+                transactionVolume: {
+                    $reduce: {
+                        input: { $ifNull: ["$transactions", []] },
+                        initialValue: 0,
+                        in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+                    }
+                },
+                balance: { $ifNull: ["$wallet.balance", 0] },
+            }
+        },
+
+        // Step-6: Filter by calculated fields
+        // {
+        //     $match: {
+        //         ...(minBalance !== undefined && { balance: { $gte: minBalance } }),
+        //         ...(maxBalance !== undefined && { balance: { $lte: maxBalance } }),
+        //         ...(minCommission !== undefined && { commission: { $gte: minCommission } }),
+        //     }
+        // },
+
+        // Step-7: Project final fields
+        {
+            $project: {
+                password: 0,
+                wallet: 0,
+                // transactions: 0 // uncomment if you don't want to return transactions
+            }
+        }
+    ];
+
+    // Pipeline for overall statistics (without filters except role)
+    const statisticsPipeline: mongoose.PipelineStage[] = [
+        // Match only agents (no other filters applied)
+        { $match: { role: Role.USER } },
+
+        // Lookup wallet
+        {
+            $lookup: {
+                from: walletCollName,
+                localField: "_id",
+                foreignField: "user",
+                as: "wallet"
+            }
+        },
+
+        // Unwind wallet
+        {
+            $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
+        },
+
+        // Lookup transactions
+        {
+            $lookup: {
+                from: txCollName,
+                let: { userId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$status", "COMPLETED"] },
+                                    {
+                                        $or: [
+                                            { $eq: ["$from", "$$userId"] },
+                                            { $eq: ["$to", "$$userId"] },
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { amount: 1, createdAt: 1 } }
+                ],
+                as: "transactions",
+            }
+        },
+
+        // Add calculated fields
+        {
+            $addFields: {
+                transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
+                transactionVolume: {
+                    $reduce: {
+                        input: { $ifNull: ["$transactions", []] },
+                        initialValue: 0,
+                        in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+                    }
+                }
+            }
+        },
+
+        // Group to calculate overall statistics
+        {
+            $group: {
+                _id: null,
+                totalUsers: { $sum: 1 },
+                totalActiveUsers: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "ACTIVE"] }, 1, 0]
+                    }
+                },
+                totalBlockedUsers: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "BLOCKED"] }, 1, 0]
+                    }
+                },
+                totalTransactions: { $sum: "$transactionsCount" },
+                totalVolume: { $sum: "$transactionVolume" }
+            }
+        }
+    ];
+
+    // Create separate pipeline for counting filtered documents
+    const countPipeline = [...pipeline, { $count: "total" }];
+
+    // Add sorting
+    const sortStage: any = {};
+    sortStage[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    pipeline.push({ $sort: sortStage });
+
+    // Add pagination
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
+
+    // Execute all queries in parallel
+    const [usersWithStats, countResult, statisticsResult] = await Promise.all([
+        User.aggregate(pipeline).exec(),
+        User.aggregate(countPipeline).exec(),
+        User.aggregate(statisticsPipeline).exec()
+    ]);
+
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    const statistics = statisticsResult[0] || {
+        totalUsers: 0,
+        totalActiveUsers: 0,
+        totalBlockedUsers: 0,
+        totalTransactions: 0,
+        totalVolume: 0
+    };
+
+    return {
+        users: usersWithStats,
+        pagination: {
+            currentPage: page,
+            totalPages,
+            totalCount,
+            // hasNext: page < totalPages,
+            // hasPrev: page > 1,
+            limit
+        },
+        statistics: {
+            totalUsers: statistics.totalUsers,
+            totalActiveUsers: statistics.totalActiveUsers,
+            totalBlockedUsers: statistics.totalBlockedUsers,
+            totalTransactions: statistics.totalTransactions,
+            totalVolume: statistics.totalVolume
+        }
+    };
 }
+
+
+// const getAllUsers = async () => {
+//     const users = await User.find({ role: Role.USER }).select("-password").sort({ createdAt: -1 })
+
+//     if (!users) throw new AppError(httpStatus.NOT_FOUND, "Users not found")
+
+//     return users;
+// }
 
 // const getAllAgents = async () => {
 //     // const agents = await User.find({ role: Role.AGENT }).select("-password").sort({ createdAt: -1 })

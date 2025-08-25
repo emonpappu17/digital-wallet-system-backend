@@ -5,14 +5,26 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes"
 
 const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const query = req.query;
 
-    const result = await adminService.getAllUsers();
+    const result = await adminService.getAllUsers(query as Record<string, string>);
+
+    // sendResponse(res, {
+    //     success: true,
+    //     statusCode: httpStatus.OK,
+    //     message: "All users retrieved successfully",
+    //     data: result
+    // })
 
     sendResponse(res, {
         success: true,
         statusCode: httpStatus.OK,
-        message: "All users retrieved successfully",
-        data: result
+        message: "All Users retrieved successfully",
+        data: {
+            users: result.users,
+            statistics: result.statistics
+        },
+        meta: result.pagination
     })
 })
 

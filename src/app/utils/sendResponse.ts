@@ -4,8 +4,8 @@ interface TMeta {
     currentPage: number,
     totalPages: number,
     totalCount: number,
-    hasNext: boolean,
-    hasPrev: boolean,
+    // hasNext: boolean,
+    // hasPrev: boolean,
     limit: number
 }
 
