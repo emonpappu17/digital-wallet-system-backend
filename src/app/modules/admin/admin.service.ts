@@ -8,7 +8,6 @@ import { User } from "../user/user.model"
 ////////////////////////////////////////
 
 const getAllAgents = async (query: Record<string, string>) => {
-    // Parse and extract query parameters with defaults
     const page = parseInt(query.page) || 1;
     const limit = parseInt(query.limit) || 10;
     const sortBy = query.sortBy || 'createdAt';
@@ -27,7 +26,6 @@ const getAllAgents = async (query: Record<string, string>) => {
     const maxTransactionVolume = query.maxTransactionVolume ? parseFloat(query.maxTransactionVolume) : undefined;
 
     const skip = (page - 1) * limit;
-
     const walletCollName = Wallet.collection.name;
     const txCollName = Transaction.collection.name;
 
@@ -39,7 +37,8 @@ const getAllAgents = async (query: Record<string, string>) => {
         matchConditions.$or = [
             { name: { $regex: search, $options: 'i' } },
             { email: { $regex: search, $options: 'i' } },
-            { phoneNumber: { $regex: search, $options: 'i' } }
+            { phoneNumber: { $regex: search, $options: 'i' } },
+            { shopName: { $regex: search, $options: 'i' } }
         ];
     }
 
@@ -55,7 +54,6 @@ const getAllAgents = async (query: Record<string, string>) => {
         if (dateTo) matchConditions.createdAt.$lte = new Date(dateTo);
     }
 
-    // console.log('matchConditions==>', matchConditions);
 
     const pipeline: mongoose.PipelineStage[] = [
         // Step-1: Initial match
@@ -129,13 +127,13 @@ const getAllAgents = async (query: Record<string, string>) => {
         {
             $match: {
                 ...(minBalance !== undefined && { balance: { $gte: minBalance } }),
-                ...(maxBalance !== undefined && { balance: { ...matchConditions.balance, $lte: maxBalance } }),
+                ...(maxBalance !== undefined && { balance: { $lte: maxBalance } }),
                 ...(minCommission !== undefined && { commission: { $gte: minCommission } }),
-                ...(maxCommission !== undefined && { commission: { ...matchConditions.commission, $lte: maxCommission } }),
+                ...(maxCommission !== undefined && { commission: { $lte: maxCommission } }),
                 ...(minTransactionCount !== undefined && { transactionsCount: { $gte: minTransactionCount } }),
-                ...(maxTransactionCount !== undefined && { transactionsCount: { ...matchConditions.transactionsCount, $lte: maxTransactionCount } }),
+                ...(maxTransactionCount !== undefined && { transactionsCount: { $lte: maxTransactionCount } }),
                 ...(minTransactionVolume !== undefined && { transactionVolume: { $gte: minTransactionVolume } }),
-                ...(maxTransactionVolume !== undefined && { transactionVolume: { ...matchConditions.transactionVolume, $lte: maxTransactionVolume } })
+                ...(maxTransactionVolume !== undefined && { transactionVolume: { $lte: maxTransactionVolume } })
             }
         },
 
@@ -149,7 +147,94 @@ const getAllAgents = async (query: Record<string, string>) => {
         }
     ];
 
-    // Create separate pipeline for counting total documents
+    // Pipeline for overall statistics (without filters except role)
+    const statisticsPipeline: mongoose.PipelineStage[] = [
+        // Match only agents (no other filters applied)
+        { $match: { role: Role.AGENT } },
+
+        // Lookup wallet
+        {
+            $lookup: {
+                from: walletCollName,
+                localField: "_id",
+                foreignField: "user",
+                as: "wallet"
+            }
+        },
+
+        // Unwind wallet
+        {
+            $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
+        },
+
+        // Lookup transactions
+        {
+            $lookup: {
+                from: txCollName,
+                let: { agentId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$status", "COMPLETED"] },
+                                    {
+                                        $or: [
+                                            { $eq: ["$from", "$$agentId"] },
+                                            { $eq: ["$to", "$$agentId"] },
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { amount: 1, agentCommission: 1, createdAt: 1 } }
+                ],
+                as: "transactions",
+            }
+        },
+
+        // Add calculated fields
+        {
+            $addFields: {
+                transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
+                transactionVolume: {
+                    $reduce: {
+                        input: { $ifNull: ["$transactions", []] },
+                        initialValue: 0,
+                        in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+                    }
+                }
+            }
+        },
+
+        // Group to calculate overall statistics
+        {
+            $group: {
+                _id: null,
+                totalAgents: { $sum: 1 },
+                totalActiveAgents: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "ACTIVE"] }, 1, 0]
+                    }
+                },
+                totalPendingAgents: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "PENDING"] }, 1, 0]
+                    }
+                },
+                totalSuspendedAgents: {
+                    $sum: {
+                        $cond: [{ $eq: ["$status", "SUSPEND"] }, 1, 0]
+                    }
+                },
+                totalTransactions: { $sum: "$transactionsCount" },
+                totalVolume: { $sum: "$transactionVolume" }
+            }
+        }
+    ];
+
+    // Create separate pipeline for counting filtered documents
     const countPipeline = [...pipeline, { $count: "total" }];
 
     // Add sorting
@@ -161,16 +246,27 @@ const getAllAgents = async (query: Record<string, string>) => {
     pipeline.push({ $skip: skip });
     pipeline.push({ $limit: limit });
 
-    // Execute both queries in parallel
-    const [agentsWithStats, countResult] = await Promise.all([
+    // Execute all queries in parallel
+    const [agentsWithStats, countResult, statisticsResult] = await Promise.all([
         User.aggregate(pipeline).exec(),
-        User.aggregate(countPipeline).exec()
+        User.aggregate(countPipeline).exec(),
+        User.aggregate(statisticsPipeline).exec()
     ]);
 
     const totalCount = countResult[0]?.total || 0;
     const totalPages = Math.ceil(totalCount / limit);
 
+    const statistics = statisticsResult[0] || {
+        totalAgents: 0,
+        totalActiveAgents: 0,
+        totalPendingAgents: 0,
+        totalSuspendedAgents: 0,
+        totalTransactions: 0,
+        totalVolume: 0
+    };
+
     // console.log('agentsWithStats==>', agentsWithStats);
+    // console.log('statistics==>', statistics);
 
     return {
         agents: agentsWithStats,
@@ -181,6 +277,14 @@ const getAllAgents = async (query: Record<string, string>) => {
             hasNext: page < totalPages,
             hasPrev: page > 1,
             limit
+        },
+        statistics: {
+            totalAgents: statistics.totalAgents,
+            totalActiveAgents: statistics.totalActiveAgents,
+            totalPendingAgents: statistics.totalPendingAgents,
+            totalSuspendedAgents: statistics.totalSuspendedAgents,
+            totalTransactions: statistics.totalTransactions,
+            totalVolume: statistics.totalVolume
         }
     };
 };

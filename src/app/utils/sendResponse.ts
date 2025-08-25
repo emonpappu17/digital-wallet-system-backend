@@ -1,10 +1,20 @@
 import { Response } from "express";
 
+interface TMeta {
+    currentPage: number,
+    totalPages: number,
+    totalCount: number,
+    hasNext: boolean,
+    hasPrev: boolean,
+    limit: number
+}
+
 interface TResponse<T> {
     statusCode: number;
     success: boolean;
     message: string;
     data: T;
+    meta?: TMeta
 }
 
 export const sendResponse = <T>(res: Response, data: TResponse<T>) => {
@@ -12,6 +22,7 @@ export const sendResponse = <T>(res: Response, data: TResponse<T>) => {
         statusCode: data.statusCode,
         success: data.success,
         message: data.message,
-        data: data.data
+        data: data.data,
+        meta: data.meta
     })
 }

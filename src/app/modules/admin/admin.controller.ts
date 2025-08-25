@@ -25,7 +25,11 @@ const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFu
         success: true,
         statusCode: httpStatus.OK,
         message: "All Agents retrieved successfully",
-        data: result
+        data: {
+            agents: result.agents,
+            statistics: result.statistics
+        },
+        meta: result.pagination
     })
 })
 
