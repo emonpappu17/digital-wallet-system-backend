@@ -77,9 +77,27 @@ const blockUser = async (id: string) => {
     // return updatedUser;
 }
 
+const getUser = async (payload: Partial<IUser>) => {
+    const { phoneNumber, email } = payload;
+
+    console.log({ payload });
+
+    // const user = await User.findOne({ phoneNumber })
+    const user = await User.findOne({
+        $or: [{ phoneNumber }, { email }]
+    }).select('-password')
+
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "Account not found")
+
+    if (user.status !== Status.ACTIVE) throw new AppError(httpStatus.NOT_FOUND, "Selected account is not active account!")
+
+    return user;
+}
+
 export const UserService = {
     createUser,
     myProfile,
     blockUser,
-    unblockUser
+    unblockUser,
+    getUser
 }

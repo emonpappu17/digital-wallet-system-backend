@@ -289,6 +289,7 @@ const getAllUsers = async (query: Record<string, string>) => {
     const status = query.status;
     const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
     const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
+    const minTransactionVolume = query.minTransactionVolume ? parseFloat(query.minTransactionVolume) : undefined;
 
     const skip = (page - 1) * limit;
     const walletCollName = Wallet.collection.name;
@@ -380,20 +381,17 @@ const getAllUsers = async (query: Record<string, string>) => {
         },
 
         // Step-6: Filter by calculated fields
-        // {
-        //     $match: {
-        //         ...(minBalance !== undefined && { balance: { $gte: minBalance } }),
-        //         ...(maxBalance !== undefined && { balance: { $lte: maxBalance } }),
-        //         ...(minCommission !== undefined && { commission: { $gte: minCommission } }),
-        //     }
-        // },
+        {
+            $match: {
+                ...(minTransactionVolume !== undefined && { transactionVolume: { $gte: minTransactionVolume } }),
+            }
+        },
 
         // Step-7: Project final fields
         {
             $project: {
                 password: 0,
                 wallet: 0,
-                // transactions: 0 // uncomment if you don't want to return transactions
             }
         }
     ];

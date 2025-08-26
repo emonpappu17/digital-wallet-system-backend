@@ -23,7 +23,6 @@ interface ISendMoney {
 }
 
 
-
 const addMoney = async (userId: string, amount: number) => {
     const session = await mongoose.startSession();
 
@@ -297,6 +296,11 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         throw error;
     }
 }
+
+
+////////////////////////////////////////////////////////////
+
+
 
 const getMyTransactionHistory = async (id: string) => {
     const user = await User.findById(id)

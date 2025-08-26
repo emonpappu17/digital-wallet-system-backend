@@ -61,6 +61,7 @@ const getMyTransactionHistory = catchAsync(async (req: Request, res: Response, n
         data: result
     })
 })
+
 const getAgentCommission = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const id = req.user.userId;
     const result = await transactionService.getAgentCommission(id);

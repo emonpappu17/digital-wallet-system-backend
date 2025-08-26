@@ -64,10 +64,23 @@ const blockUser = catchAsync(async (req: Request, res: Response, next: NextFunct
     })
 })
 
+const getUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const userInfo = await UserService.getUser(req.body);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User get Successfully",
+        data: userInfo
+    })
+})
+
 
 export const UserController = {
     createUser,
     myProfile,
     blockUser,
-    unblockUser
+    unblockUser,
+    getUser
 }

@@ -32,5 +32,11 @@ router.get(
     UserController.myProfile
 )
 
+router.post(
+    "/get-user",
+    checkAuth(...Object.values(Role)),
+    UserController.getUser
+)
+
 
 export const userRoutes = router;
