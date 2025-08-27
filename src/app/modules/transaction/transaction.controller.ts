@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { transactionService } from "./transaction.service";
 
+
 const addMoney = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user.userId;
     const result = await transactionService.addMoney(userId, req.body.amount);

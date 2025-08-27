@@ -76,11 +76,32 @@ const getUser = catchAsync(async (req: Request, res: Response, next: NextFunctio
     })
 })
 
+const getUserStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const id = req.user.userId
+    const query = req.query;
+
+
+    const userStats = await UserService.getUserStats(id, query as Record<string, string>);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User stats get Successfully",
+        data: {
+            user: userStats.user,
+            wallet: userStats.wallet,
+            transaction: userStats.transactions
+        },
+        meta: userStats.meta
+    })
+})
+
 
 export const UserController = {
     createUser,
     myProfile,
     blockUser,
     unblockUser,
-    getUser
+    getUser,
+    getUserStats
 }

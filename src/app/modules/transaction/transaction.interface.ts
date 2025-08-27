@@ -27,5 +27,6 @@ export interface ITransaction {
     to: Types.ObjectId | string,
     fee?: string,
     agentCommission?: number,
-    status?: TRANSACTION_STATUS
+    status?: TRANSACTION_STATUS,
+    transactionId?: string
 }

@@ -1,5 +1,7 @@
+import mongoose from "mongoose";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
+import { Transaction } from "../transaction/transaction.model";
 import { IUser, Role, Status } from "../user/user.interface";
 import { User } from "../user/user.model";
 import { Wallet } from "../wallet.ts/wallet.model";
@@ -135,9 +137,275 @@ const suspendAgent = async (id: string) => {
     return agent;
 }
 
+const getAgent = async (payload: Partial<IUser>) => {
+    const { phoneNumber } = payload;
+
+    const agent = await User.findOne({
+        $or: [{ phoneNumber }]
+    }).select('-password')
+
+    if (!agent) throw new AppError(httpStatus.NOT_FOUND, "Account not found")
+
+    if (agent.role !== Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "Not a agent account!")
+
+    if (agent.status !== Status.ACTIVE || agent.role !== Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "Selected account is not active account!")
+
+    return agent;
+}
+
+// const getAgentStats = async (agentId: string, query: Record<string, string>) => {
+
+// }
+
+
+const getAgentStats = async (agentId: string, query: Record<string, string>) => {
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+    const search = query.search;
+    const type = query.type; 
+    const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
+    const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
+
+    const skip = (page - 1) * limit;
+    const objectId = new mongoose.Types.ObjectId(agentId);
+    const txCollName = Transaction.collection.name;
+    const userCollName = User.collection.name;
+
+    //  agent info
+    const agent = await User.findById(agentId).select("name email phoneNumber shopName role status");
+    if (!agent) throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+
+    //  wallet 
+    const wallet = await Wallet.findOne({ user: objectId }).select("balance");
+
+    // Build base match: transactions where agent is either from or to
+    const matchConditions: any = {
+        $or: [
+            { from: objectId },
+            { to: objectId }
+        ]
+    };
+    if (type) matchConditions.type = type;
+    if (dateFrom || dateTo) matchConditions.createdAt = {};
+    if (dateFrom) matchConditions.createdAt.$gte = dateFrom;
+    if (dateTo) matchConditions.createdAt.$lte = dateTo;
+
+    // Base pipeline: match + lookups for fromUser & toUser
+    const pipeline: mongoose.PipelineStage[] = [
+        { $match: matchConditions },
+
+        // Lookup sender (from)
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "from",
+                foreignField: "_id",
+                as: "fromUser"
+            }
+        },
+        { $unwind: "$fromUser" },
+
+        // Lookup receiver (to)
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "to",
+                foreignField: "_id",
+                as: "toUser"
+            }
+        },
+        { $unwind: "$toUser" }
+    ];
+
+    // Optional search filter (search counterpart or tx id)
+    if (search) {
+        const s = search.trim();
+        pipeline.push({
+            $match: {
+                $or: [
+                    // { _id: { $regex: s, $options: "i" } }, 
+                    { "fromUser.name": { $regex: s, $options: "i" } },
+                    { "fromUser.email": { $regex: s, $options: "i" } },
+                    { "fromUser.phoneNumber": { $regex: s, $options: "i" } },
+                    { "toUser.name": { $regex: s, $options: "i" } },
+                    { "toUser.email": { $regex: s, $options: "i" } },
+                    { "toUser.phoneNumber": { $regex: s, $options: "i" } }
+                ]
+            }
+        });
+    }
+
+    // 1) Count pipeline (count total matching transactions)
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = await Transaction.aggregate(countPipeline);
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Stats
+    const statsPipeline: mongoose.PipelineStage[] = [
+        ...pipeline,
+        {
+            $group: {
+                _id: null,
+                totalHandled: { $sum: "$amount" },
+                totalCommission: { $sum: { $ifNull: ["$agentCommission", 0] } },
+                // totalFees: { $sum: { $ifNull: ["$fee", 0] } },
+                txCount: { $sum: 1 },
+                totalCashInHandled: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $eq: ["$type", "CASH_IN"] },
+                                    { $eq: ["$fromUser._id", objectId] } // agent is 'from' => agent performed cash-in to user
+                                ]
+                            },
+                            "$amount",
+                            0
+                        ]
+                    }
+                },
+                totalCashOutHandled: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $eq: ["$type", "CASH_OUT"] },
+                                    { $eq: ["$toUser._id", objectId] } // agent is 'to' => agent handled user's cash-out
+                                ]
+                            },
+                            "$amount",
+                            0
+                        ]
+                    }
+                }
+            }
+        }
+    ];
+
+    const statsResult = await Transaction.aggregate(statsPipeline);
+    const statsAgg = statsResult[0] || {
+        totalHandled: 0,
+        totalCommission: 0,
+        // totalFees: 0,
+        txCount: 0,
+        totalCashInHandled: 0,
+        totalCashOutHandled: 0
+    };
+
+    // 3) Final pipeline for list: same pipeline + project fields + sort + paginate
+    const listPipeline: mongoose.PipelineStage[] = [
+        ...pipeline,
+
+        // Project fields and determine counterpart & direction relative to agent
+        {
+            $project: {
+                _id: 1,
+                amount: 1,
+                type: 1,
+                // fee: 1,
+                agentCommission: 1,
+                status: 1,
+                createdAt: 1,
+                // from: "$fromUser._id",
+                fromName: "$fromUser.name",
+                fromPhone: "$fromUser.phoneNumber",
+                fromRole: "$fromUser.role",
+                // to: "$toUser._id",
+                toName: "$toUser.name",
+                toPhone: "$toUser.phoneNumber",
+                toRole: "$toUser.role",
+
+                // is agent the 'from' side?
+                // isAgentFrom: { $eq: ["$fromUser._id", objectId] },
+
+                // counterpart info: if agent is from -> counterpart is 'toUser', else counterpart is 'fromUser'
+                // counterpartId: {
+                //     $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser._id", "$fromUser._id"]
+                // },
+                counterpartName: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.name", "$fromUser.name"]
+                },
+                counterpartPhone: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.phoneNumber", "$fromUser.phoneNumber"]
+                },
+                counterpartRole: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.role", "$fromUser.role"]
+                },
+                // direction relative to agent (OUT = agent->other, IN = other->agent)
+                direction: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "OUT", "IN"]
+                },
+                // readable agent action: CASH_IN_BY_AGENT, CASH_OUT_BY_AGENT, or OTHER
+                // agentAction: {
+                //     $switch: {
+                //         branches: [
+                //             {
+                //                 case: { $and: [{ $eq: ["$type", "CASH_IN"] }, { $eq: ["$fromUser._id", objectId] }] },
+                //                 then: "CASH_IN_BY_AGENT"
+                //             },
+                //             {
+                //                 case: { $and: [{ $eq: ["$type", "CASH_OUT"] }, { $eq: ["$toUser._id", objectId] }] },
+                //                 then: "CASH_OUT_BY_AGENT"
+                //             }
+                //         ],
+                //         default: "OTHER"
+                //     }
+                // }
+            }
+        },
+
+        // sorting & pagination
+        { $sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 } },
+        { $skip: skip },
+        { $limit: limit }
+    ];
+
+    const transactions = await Transaction.aggregate(listPipeline);
+
+    // Optionally compute per-page sums (if desired) - here we compute per-page commission sum
+    // const pageCommission = transactions.reduce((s: number, t: any) => s + (t.agentCommission || 0), 0);
+
+    return {
+        agent: {
+            id: agent._id,
+            name: agent.name,
+            email: agent.email,
+            phoneNumber: agent.phoneNumber,
+            shopName: (agent as any).shopName,
+            role: agent.role,
+            status: agent.status
+        },
+        wallet: {
+            balance: wallet?.balance || 0
+        },
+        summary: {
+            totalHandledAmount: statsAgg.totalHandled || 0,
+            totalCashInHandled: statsAgg.totalCashInHandled || 0,
+            totalCashOutHandled: statsAgg.totalCashOutHandled || 0,
+            totalCommissionEarned: statsAgg.totalCommission || 0,
+            // totalFeesCollected: statsAgg.totalFees || 0,
+            totalTransactions: statsAgg.txCount || 0
+        },
+        transactions, // paginated list with counterpart and agentAction/direction metadata
+        meta: {
+            currentPage: page,
+            totalPages,
+            totalCount,
+            limit,
+            // pageCommission
+        }
+    };
+};
+
+
 export const agentRequestService = {
     createAgentRequest,
     approveAgentRequest,
     getAllAgentRequests,
-    suspendAgent
+    suspendAgent,
+    getAgent,
+    getAgentStats
 }

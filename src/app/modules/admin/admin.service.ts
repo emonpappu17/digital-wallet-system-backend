@@ -1,10 +1,10 @@
+import httpStatus from "http-status-codes"
 import mongoose from "mongoose"
 import AppError from "../../errorHelpers/AppError"
 import { Transaction } from "../transaction/transaction.model"
 import { Role } from "../user/user.interface"
-import { Wallet } from "../wallet.ts/wallet.model"
-import httpStatus from "http-status-codes"
 import { User } from "../user/user.model"
+import { Wallet } from "../wallet.ts/wallet.model"
 ////////////////////////////////////////
 
 const getAllAgents = async (query: Record<string, string>) => {
@@ -528,111 +528,6 @@ const getAllUsers = async (query: Record<string, string>) => {
     };
 }
 
-
-// const getAllUsers = async () => {
-//     const users = await User.find({ role: Role.USER }).select("-password").sort({ createdAt: -1 })
-
-//     if (!users) throw new AppError(httpStatus.NOT_FOUND, "Users not found")
-
-//     return users;
-// }
-
-// const getAllAgents = async () => {
-//     // const agents = await User.find({ role: Role.AGENT }).select("-password").sort({ createdAt: -1 })
-//     // if (!agents) throw new AppError(httpStatus.NOT_FOUND, "Agents not found")
-//     // return agents;
-
-//     // const user = User.collection.name
-//     const walletCollName = Wallet.collection.name;
-//     const txCollName = Transaction.collection.name;
-
-//     const pipeline: mongoose.PipelineStage[] = [
-//         // Step-1
-//         { $match: { role: Role.AGENT } },
-//         // Step-2
-//         {
-//             $lookup: {
-//                 from: walletCollName,
-//                 localField: "_id", // my agent id
-//                 foreignField: "user", // wallet user which is my agent id
-//                 as: "wallet"
-//             }
-//         },
-//         // Step-3
-//         {
-//             // $unwind: "$wallet"
-//             $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
-//         },
-//         // Step-4
-//         {
-//             $lookup: {
-//                 from: txCollName,
-//                 let: { agentId: "$_id" },
-//                 pipeline: [
-//                     {
-//                         $match: {
-//                             $expr: {
-//                                 $and: [
-//                                     // only completed trans
-//                                     { $eq: ["$status", "COMPLETED"] },
-//                                     // agent involved if 'from' or 'to' matches agent id
-//                                     {
-//                                         $or: [
-//                                             { $eq: ["$from", "$$agentId"] },
-//                                             { $eq: ["$to", "$$agentId"] },
-//                                         ]
-//                                     }
-//                                 ]
-//                             }
-//                         }
-//                     },
-//                     { $project: { amount: 1, agentCommission: 1, createdAt: 1 } }
-//                 ],
-//                 as: "transactions",
-//             }
-//         },
-//         // Step-5
-//         {
-//             $addFields: {
-//                 transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
-//                 transactionVolume: {
-//                     $reduce: {
-//                         input: { $ifNull: ["$transactions", []] },
-//                         initialValue: 0,
-//                         in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
-//                     }
-//                 },
-//                 commission: {
-//                     $reduce: {
-//                         input: { $ifNull: ["$transactions", []] },
-//                         initialValue: 0,
-//                         in: { $add: ["$$value", { $ifNull: ["$$this.agentCommission", 0] }] }
-
-//                     }
-//                 },
-//                 balance: { $ifNull: ["$wallet.balance", 0] },
-//             }
-//         },
-//         // Step-6
-//         {
-//             $project: {
-//                 password: 0,
-//                 wallet: 0,
-//                 // transactions: 0
-//             }
-//         },
-//         // Step-7
-//         { $sort: { createAt: -1 } }
-
-//     ];
-
-//     const agentsWithStats = await User.aggregate(pipeline).exec();
-
-//     console.log('agentsWithStats==>', agentsWithStats); //users
-
-//     return agentsWithStats;
-// }
-
 const getAllWallets = async () => {
     const wallets = await Wallet.find().populate("user", "name phoneNumber role").sort({ createdAt: -1 })
 
@@ -648,9 +543,455 @@ const getAllTransactions = async () => {
 
     return transactions;
 }
+
+
+// export const getAllUserStats = async (query: Record<string, string>) => {
+//     const page = parseInt(query.page as string) || 1;
+//     const limit = parseInt(query.limit as string) || 10;
+//     const sortBy = (query.sortBy as string) || "createdAt";
+//     const sortOrder = (query.sortOrder as string) === "asc" ? 1 : -1;
+//     const search = (query.search || "").trim();
+//     const type = query.type as string | undefined;
+//     const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
+//     const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
+//     const roleFilter = (query.role as string | undefined)?.toUpperCase();
+
+//     const skip = (page - 1) * limit;
+
+//     const userCollName = User.collection.name;
+
+//     const userMatch: any = {};
+//     if (roleFilter) userMatch.role = roleFilter;
+//     if (search) {
+//         const s = new RegExp(search, "i");
+//         userMatch.$or = [
+//             { name: { $regex: s } },
+//             { email: { $regex: s } },
+//             { phoneNumber: { $regex: s } }
+//         ];
+//     }
+
+//     const totalUsers = await User.countDocuments(userMatch);
+
+
+//     const totalAgents = await User.countDocuments({ role: "AGENT" });
+
+//     const txMatch: any = {};
+
+//     if (type) txMatch.type = type;
+//     if (dateFrom || dateTo) {
+//         txMatch.createdAt = {};
+//         if (dateFrom) txMatch.createdAt.$gte = dateFrom;
+//         if (dateTo) txMatch.createdAt.$lte = dateTo;
+//     }
+
+//     const baseTxPipeline: mongoose.PipelineStage[] = [{ $match: txMatch }];
+
+
+//     baseTxPipeline.push(
+//         {
+//             $lookup: {
+//                 from: userCollName,
+//                 localField: "from",
+//                 foreignField: "_id",
+//                 as: "fromUser"
+//             }
+//         },
+//         { $unwind: { path: "$fromUser", preserveNullAndEmptyArrays: true } },
+//         {
+//             $lookup: {
+//                 from: userCollName,
+//                 localField: "to",
+//                 foreignField: "_id",
+//                 as: "toUser"
+//             }
+//         },
+//         { $unwind: { path: "$toUser", preserveNullAndEmptyArrays: true } }
+//     );
+
+
+//     if (search) {
+//         const s = new RegExp(search, "i");
+//         baseTxPipeline.push({
+//             $match: {
+//                 $or: [
+//                     { _id: { $regex: search } },
+//                     { "fromUser.name": { $regex: s } },
+//                     { "fromUser.email": { $regex: s } },
+//                     { "fromUser.phoneNumber": { $regex: s } },
+//                     { "toUser.name": { $regex: s } },
+//                     { "toUser.email": { $regex: s } },
+//                     { "toUser.phoneNumber": { $regex: s } },
+//                     { amount: isNaN(Number(search)) ? -1 : Number(search) }
+//                 ]
+//             }
+//         });
+//     }
+
+
+//     const txCountPipeline = [...baseTxPipeline, { $count: "total" }];
+//     const txCountResult = await Transaction.aggregate(txCountPipeline);
+//     const totalTxCount = txCountResult[0]?.total || 0;
+//     const txTotalPages = Math.ceil(totalTxCount / limit);
+
+
+//     const statsPipeline: mongoose.PipelineStage[] = [
+//         ...baseTxPipeline,
+//         {
+//             $group: {
+//                 _id: null,
+//                 totalVolume: { $sum: "$amount" },
+//                 totalTransactions: { $sum: 1 },
+//                 totalCommission: { $sum: { $ifNull: ["$agentCommission", 0] } },
+//                 totalFees: { $sum: { $ifNull: ["$fee", 0] } },
+//                 byType: {
+//                     $push: { type: "$type", amount: "$amount" }
+//                 }
+//             }
+//         }
+//     ];
+//     const statsRes = await Transaction.aggregate(statsPipeline);
+//     const overallStats = statsRes[0] || {
+//         totalVolume: 0,
+//         totalTransactions: 0,
+//         totalCommission: 0,
+//         totalFees: 0,
+//         byType: []
+//     };
+
+
+//     const listPipeline: mongoose.PipelineStage[] = [
+//         ...baseTxPipeline,
+//         {
+//             $project: {
+//                 _id: 1,
+//                 amount: 1,
+//                 type: 1,
+//                 fee: 1,
+//                 agentCommission: 1,
+//                 status: 1,
+//                 createdAt: 1,
+//                 from: "$fromUser._id",
+//                 fromName: "$fromUser.name",
+//                 fromEmail: "$fromUser.email",
+//                 fromPhone: "$fromUser.phoneNumber",
+//                 fromRole: "$fromUser.role",
+//                 to: "$toUser._id",
+//                 toName: "$toUser.name",
+//                 toEmail: "$toUser.email",
+//                 toPhone: "$toUser.phoneNumber",
+//                 toRole: "$toUser.role",
+
+//                 counterpart: {
+//                     $cond: [
+//                         { $and: [{ $ne: ["$fromUser", null] }, { $ne: ["$toUser", null] }] },
+//                         { from: "$fromUser.name", to: "$toUser.name" },
+//                         { from: "$fromUser.name", to: "$toUser.name" }
+//                     ]
+//                 }
+//             }
+//         },
+//         { $sort: { [sortBy]: sortOrder } },
+//         { $skip: skip },
+//         { $limit: limit }
+//     ];
+//     const transactions = await Transaction.aggregate(listPipeline);
+
+//     return {
+//         totals: {
+//             totalUsers,
+//             totalAgents,
+//             totalTransactions: overallStats.totalTransactions || totalTxCount,
+//             totalTransactionVolume: overallStats.totalVolume || 0,
+//             totalCommission: overallStats.totalCommission || 0,
+//             totalFees: overallStats.totalFees || 0,
+//         },
+//         transactions: {
+//             list: transactions,
+//         },
+//         meta: {
+//             currentPage: page,
+//             limit,
+//             totalPages: txTotalPages,
+//             totalCount: totalTxCount
+//         }
+//     };
+// };
+
+
+
+export const getAllUserStats = async (query: Record<string, string>) => {
+    const page = parseInt(query.page as string) || 1;
+    const limit = parseInt(query.limit as string) || 10;
+    const sortBy = (query.sortBy as string) || "createdAt";
+    const sortOrder = (query.sortOrder as string) === "asc" ? 1 : -1;
+    const search = (query.search || "").trim();
+    const type = query.type as string | undefined;
+    const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
+    const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
+    const roleFilter = (query.role as string | undefined)?.toUpperCase();
+
+    const skip = (page - 1) * limit;
+
+    const userCollName = User.collection.name;
+
+    const userMatch: any = {};
+    if (roleFilter) userMatch.role = roleFilter;
+    if (search) {
+        const s = new RegExp(search, "i");
+        userMatch.$or = [
+            { name: { $regex: s } },
+            { email: { $regex: s } },
+            { phoneNumber: { $regex: s } }
+        ];
+    }
+
+    const totalUsers = await User.countDocuments(userMatch);
+    const totalAgents = await User.countDocuments({ role: "AGENT" });
+
+    const txMatch: any = {};
+
+    if (type) txMatch.type = type;
+    if (dateFrom || dateTo) {
+        txMatch.createdAt = {};
+        if (dateFrom) txMatch.createdAt.$gte = dateFrom;
+        if (dateTo) txMatch.createdAt.$lte = dateTo;
+    }
+
+    const baseTxPipeline: mongoose.PipelineStage[] = [{ $match: txMatch }];
+
+    baseTxPipeline.push(
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "from",
+                foreignField: "_id",
+                as: "fromUser"
+            }
+        },
+        { $unwind: { path: "$fromUser", preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "to",
+                foreignField: "_id",
+                as: "toUser"
+            }
+        },
+        { $unwind: { path: "$toUser", preserveNullAndEmptyArrays: true } }
+    );
+
+    if (search) {
+        const s = new RegExp(search, "i");
+        baseTxPipeline.push({
+            $match: {
+                $or: [
+                    { _id: { $regex: search } },
+                    { "fromUser.name": { $regex: s } },
+                    { "fromUser.email": { $regex: s } },
+                    { "fromUser.phoneNumber": { $regex: s } },
+                    { "toUser.name": { $regex: s } },
+                    { "toUser.email": { $regex: s } },
+                    { "toUser.phoneNumber": { $regex: s } },
+                    { amount: isNaN(Number(search)) ? -1 : Number(search) }
+                ]
+            }
+        });
+    }
+
+    const txCountPipeline = [...baseTxPipeline, { $count: "total" }];
+    const txCountResult = await Transaction.aggregate(txCountPipeline);
+    const totalTxCount = txCountResult[0]?.total || 0;
+    const txTotalPages = Math.ceil(totalTxCount / limit);
+
+    const statsPipeline: mongoose.PipelineStage[] = [
+        ...baseTxPipeline,
+        {
+            $group: {
+                _id: null,
+                totalVolume: { $sum: "$amount" },
+                totalTransactions: { $sum: 1 },
+                totalCommission: { $sum: { $ifNull: ["$agentCommission", 0] } },
+                totalFees: { $sum: { $ifNull: ["$fee", 0] } },
+                byType: {
+                    $push: { type: "$type", amount: "$amount" }
+                }
+            }
+        }
+    ];
+    const statsRes = await Transaction.aggregate(statsPipeline);
+    const overallStats = statsRes[0] || {
+        totalVolume: 0,
+        totalTransactions: 0,
+        totalCommission: 0,
+        totalFees: 0,
+        byType: []
+    };
+
+    // NEW: Pie Chart Data - Transaction distribution by type
+    const pieChartPipeline: mongoose.PipelineStage[] = [
+        { $match: { ...txMatch, status: "COMPLETED" } },
+        {
+            $group: {
+                _id: "$type",
+                totalAmount: { $sum: "$amount" },
+                totalCount: { $sum: 1 },
+                totalFees: { $sum: { $ifNull: ["$fee", 0] } },
+                totalCommission: { $sum: { $ifNull: ["$agentCommission", 0] } }
+            }
+        },
+        { $sort: { totalAmount: -1 } }
+    ];
+    const pieChartResult = await Transaction.aggregate(pieChartPipeline);
+    const pieChartTotal = pieChartResult.reduce((sum, item) => sum + item.totalAmount, 0);
+
+    const pieChartData = pieChartResult.map(item => ({
+        type: item._id,
+        value: item.totalAmount,
+        percentage: pieChartTotal > 0 ? Math.round((item.totalAmount / pieChartTotal) * 100 * 100) / 100 : 0,
+        count: item.totalCount,
+        fees: item.totalFees,
+        commission: item.totalCommission
+    }));
+
+    // NEW: Bar Chart Data - Daily transaction volume by type (last 7 days if no date filter)
+    const barChartDateFrom = dateFrom || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const barChartDateTo = dateTo || new Date();
+
+    const barChartPipeline: mongoose.PipelineStage[] = [
+        {
+            $match: {
+                ...txMatch,
+                status: "COMPLETED",
+                createdAt: {
+                    $gte: barChartDateFrom,
+                    $lte: barChartDateTo
+                }
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    date: {
+                        year: { $year: "$createdAt" },
+                        month: { $month: "$createdAt" },
+                        day: { $dayOfMonth: "$createdAt" }
+                    },
+                    type: "$type"
+                },
+                totalAmount: { $sum: "$amount" },
+                totalCount: { $sum: 1 }
+            }
+        },
+        {
+            $group: {
+                _id: "$_id.date",
+                types: {
+                    $push: {
+                        type: "$_id.type",
+                        amount: "$totalAmount",
+                        count: "$totalCount"
+                    }
+                },
+                totalAmount: { $sum: "$totalAmount" },
+                totalCount: { $sum: "$totalCount" }
+            }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+    ];
+
+    const barChartResult = await Transaction.aggregate(barChartPipeline);
+    const barChartData = barChartResult.map(item => {
+        const dateObj = item._id;
+        const dateLabel = `${dateObj.year}-${String(dateObj.month).padStart(2, '0')}-${String(dateObj.day).padStart(2, '0')}`;
+
+        const typeData: Record<string, number> = {};
+        item.types.forEach((type: any) => {
+            typeData[type.type] = type.amount;
+        });
+
+        return {
+            date: dateLabel,
+            totalAmount: item.totalAmount,
+            totalCount: item.totalCount,
+            ...typeData
+        };
+    });
+
+    const listPipeline: mongoose.PipelineStage[] = [
+        ...baseTxPipeline,
+        {
+            $project: {
+                _id: 1,
+                amount: 1,
+                type: 1,
+                fee: 1,
+                agentCommission: 1,
+                status: 1,
+                createdAt: 1,
+                from: "$fromUser._id",
+                fromName: "$fromUser.name",
+                fromEmail: "$fromUser.email",
+                fromPhone: "$fromUser.phoneNumber",
+                fromRole: "$fromUser.role",
+                to: "$toUser._id",
+                toName: "$toUser.name",
+                toEmail: "$toUser.email",
+                toPhone: "$toUser.phoneNumber",
+                toRole: "$toUser.role",
+                counterpart: {
+                    $cond: [
+                        { $and: [{ $ne: ["$fromUser", null] }, { $ne: ["$toUser", null] }] },
+                        { from: "$fromUser.name", to: "$toUser.name" },
+                        { from: "$fromUser.name", to: "$toUser.name" }
+                    ]
+                }
+            }
+        },
+        { $sort: { [sortBy]: sortOrder } },
+        { $skip: skip },
+        { $limit: limit }
+    ];
+    const transactions = await Transaction.aggregate(listPipeline);
+
+    return {
+        totals: {
+            totalUsers,
+            totalAgents,
+            totalTransactions: overallStats.totalTransactions || totalTxCount,
+            totalTransactionVolume: overallStats.totalVolume || 0,
+            totalCommission: overallStats.totalCommission || 0,
+            totalFees: overallStats.totalFees || 0,
+        },
+        transactions: {
+            list: transactions,
+        },
+       
+        charts: {
+            pieChart: {
+                data: pieChartData,
+                total: pieChartTotal
+            },
+            barChart: {
+                data: barChartData,
+                dateRange: {
+                    from: barChartDateFrom,
+                    to: barChartDateTo
+                }
+            }
+        },
+        meta: {
+            currentPage: page,
+            limit,
+            totalPages: txTotalPages,
+            totalCount: totalTxCount
+        }
+    };
+};
 export const adminService = {
     getAllUsers,
     getAllAgents,
     getAllWallets,
-    getAllTransactions
+    getAllTransactions,
+    getAllUserStats
 }

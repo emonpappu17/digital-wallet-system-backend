@@ -1,7 +1,9 @@
+import mongoose from "mongoose";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
 import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import { AgentRequest } from "../agentRequest/agentRequest.model";
+import { Transaction } from "../transaction/transaction.model";
 import { Wallet } from "../wallet.ts/wallet.model";
 import { IUser, Role, Status } from "./user.interface"
 import { User } from "./user.model";
@@ -69,35 +71,196 @@ const blockUser = async (id: string) => {
 
     if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
-    // const updatedUser = await User.findByIdAndUpdate(id, { status: Status.BLOCKED }, { new: true }).select("-password")
     user.status = Status.BLOCKED
     await user.save()
 
     return user;
-    // return updatedUser;
 }
 
 const getUser = async (payload: Partial<IUser>) => {
     const { phoneNumber, email } = payload;
 
-    console.log({ payload });
-
-    // const user = await User.findOne({ phoneNumber })
     const user = await User.findOne({
         $or: [{ phoneNumber }, { email }]
     }).select('-password')
 
     if (!user) throw new AppError(httpStatus.NOT_FOUND, "Account not found")
 
+    if (user.role !== Role.USER) throw new AppError(httpStatus.NOT_FOUND, "Not a user account")
+
     if (user.status !== Status.ACTIVE) throw new AppError(httpStatus.NOT_FOUND, "Selected account is not active account!")
 
     return user;
 }
+
+
+const getUserStats = async (userId: string, query: Record<string, string>) => {
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 10;
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'desc';
+    const search = query.search;
+    const type = query.type; // transaction type filter
+    const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
+    const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
+
+    const skip = (page - 1) * limit;
+    const objectId = new mongoose.Types.ObjectId(userId);
+    const txCollName = Transaction.collection.name;
+    const userCollName = User.collection.name;
+
+    // Fetch user info
+    const user = await User.findById(userId).select("name email phoneNumber");
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+
+    // Fetch wallet
+    const wallet = await Wallet.findOne({ user: objectId }).select("balance");
+
+    // Match transactions
+    const matchConditions: any = { $or: [{ from: objectId }, { to: objectId }] };
+    if (type) matchConditions.type = type;
+    if (dateFrom || dateTo) matchConditions.createdAt = {};
+    if (dateFrom) matchConditions.createdAt.$gte = dateFrom;
+    if (dateTo) matchConditions.createdAt.$lte = dateTo;
+
+    const pipeline: mongoose.PipelineStage[] = [
+        { $match: matchConditions },
+
+        // Lookup sender
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "from",
+                foreignField: "_id",
+                as: "fromUser"
+            }
+        },
+        { $unwind: "$fromUser" },
+
+        // Lookup receiver
+        {
+            $lookup: {
+                from: userCollName,
+                localField: "to",
+                foreignField: "_id",
+                as: "toUser"
+            }
+        },
+        { $unwind: "$toUser" },
+
+        // Optional search filter
+        ...(search ? [{
+            $match: {
+                $or: [
+                    { "fromUser.name": { $regex: search, $options: "i" } },
+                    { "fromUser.email": { $regex: search, $options: "i" } },
+                    { "toUser.name": { $regex: search, $options: "i" } },
+                    { "toUser.email": { $regex: search, $options: "i" } }
+                ]
+            }
+        }] : []),
+
+        // Project with role information
+        {
+            $project: {
+                _id: 1,
+                amount: 1,
+                type: 1,
+                // fee: 1,
+                // agentCommission: 1,
+                status: 1,
+                createdAt: 1,
+                from: "$fromUser._id",
+                fromName: "$fromUser.name",
+                fromEmail: "$fromUser.email",
+                fromRole: "$fromUser.role",
+                to: "$toUser._id",
+                toName: "$toUser.name",
+                toEmail: "$toUser.email",
+                toRole: "$toUser.role",
+                // Add a field to identify the counterpart role for the current user
+                counterpartRole: {
+                    $cond: {
+                        if: { $eq: ["$fromUser._id", objectId] },
+                        then: "$toUser.role",
+                        else: "$fromUser.role"
+                    }
+                },
+                // Add a field to identify transaction direction for the current user
+                direction: {
+                    $cond: {
+                        if: { $eq: ["$fromUser._id", objectId] },
+                        then: "SENT",
+                        else: "RECEIVED"
+                    }
+                }
+            }
+        }
+    ];
+
+    // Count for meta
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = await Transaction.aggregate(countPipeline);
+    const totalCount = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Sorting & pagination
+    pipeline.push({ $sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
+
+    const transactions = await Transaction.aggregate(pipeline);
+
+    // Calculate wallet summary with more detailed breakdown
+    const sentTransactions = transactions.filter(tx => tx.from.toString() === userId);
+    const receivedTransactions = transactions.filter(tx => tx.to.toString() === userId);
+
+    const totalSent = sentTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const totalReceived = receivedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+
+    // Calculate totals by counterpart role
+    const sentByRole = sentTransactions.reduce((acc, tx) => {
+        const role = tx.toRole;
+        acc[role] = (acc[role] || 0) + tx.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const receivedByRole = receivedTransactions.reduce((acc, tx) => {
+        const role = tx.fromRole;
+        acc[role] = (acc[role] || 0) + tx.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    return {
+        user: {
+            name: user.name,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            // role: user.role
+        },
+        wallet: {
+            balance: wallet?.balance || 0,
+            totalSent,
+            totalReceived,
+            sentByRole,
+            receivedByRole
+        },
+        transactions,
+        meta: {
+            currentPage: page,
+            totalPages,
+            totalCount,
+            limit
+        }
+    };
+};
+
 
 export const UserService = {
     createUser,
     myProfile,
     blockUser,
     unblockUser,
-    getUser
+    getUser,
+    getUserStats
 }

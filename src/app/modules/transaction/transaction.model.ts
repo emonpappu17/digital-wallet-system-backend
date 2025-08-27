@@ -41,6 +41,10 @@ const transactionSchema = new Schema<ITransaction>({
         },
         default: TRANSACTION_STATUS.COMPLETED
     },
+    transactionId: {
+        type: String,
+
+    },
 }, {
     timestamps: true,
     versionKey: false

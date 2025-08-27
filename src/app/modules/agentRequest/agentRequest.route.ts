@@ -31,5 +31,17 @@ router.patch(
 )
 
 
+router.post(
+    "/get-agent",
+    checkAuth(...Object.values(Role)),
+    agentRequestController.getAgent
+)
+
+router.get(
+    "/agent-stats",
+    checkAuth(Role.AGENT),
+    agentRequestController.getAgentStats
+)
+
 
 export const agentRequestRoutes = router;

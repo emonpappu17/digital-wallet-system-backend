@@ -30,8 +30,6 @@ router.get(
     checkAuth(Role.USER, Role.AGENT),
     transactionController.getMyTransactionHistory
 )
-
-
 router.post(
     "/cash-in",
     checkAuth(Role.AGENT),

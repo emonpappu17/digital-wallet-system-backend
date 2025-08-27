@@ -38,5 +38,11 @@ router.post(
     UserController.getUser
 )
 
+router.get(
+    "/user-stats",
+    checkAuth(Role.USER),
+    UserController.getUserStats
+)
+
 
 export const userRoutes = router;

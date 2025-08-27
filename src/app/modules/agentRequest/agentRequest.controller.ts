@@ -62,10 +62,51 @@ const suspendAgent = catchAsync(async (req: Request, res: Response, next: NextFu
         data: result
     })
 })
+const getAgent = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const agentInfo = await agentRequestService.getAgent(req.body);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "agent get Successfully",
+        data: agentInfo
+    })
+})
+const getAgentStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const id = req.user.userId
+    const query = req.query;
+
+
+    const agentStats = await agentRequestService.getAgentStats(id, query as Record<string, string>);
+
+    // sendResponse(res, {
+    //     success: true,
+    //     statusCode: httpStatus.OK,
+    //     message: "agent get Successfully",
+    //     data: agentInfo
+    // })
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Agent stats get Successfully",
+        data: {
+            agent: agentStats.agent,
+            wallet: agentStats.wallet,
+            transaction: agentStats.transactions,
+            summary: agentStats.summary
+        },
+        meta: agentStats.meta
+    })
+})
 
 export const agentRequestController = {
     createAgentRequest,
     approveAgentRequest,
     getAllAgentRequests,
-    suspendAgent
+    suspendAgent,
+    getAgent,
+    getAgentStats
 }

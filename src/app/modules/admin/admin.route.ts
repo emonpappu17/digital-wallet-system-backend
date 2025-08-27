@@ -28,5 +28,11 @@ router.get(
     adminController.getAllTransactions
 );
 
+router.get(
+    "/all-user-stats",
+    checkAuth(Role.ADMIN),
+    adminController.getAllUserStats
+);
+
 
 export const adminRoutes = router

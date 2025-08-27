@@ -69,9 +69,30 @@ const getAllTransactions = catchAsync(async (req: Request, res: Response, next: 
     })
 })
 
+const getAllUserStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const query = req.query;
+    const result = await adminService.getAllUserStats(query as Record<string, string>);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "All users stats retrieved successfully",
+        data: {
+            // agents: result.agents,
+            // users: result.users,
+            totals: result.totals,
+            transactions: result.transactions,
+            charts: result.charts
+        },
+        meta: result.meta
+    })
+})
+
 export const adminController = {
     getAllUsers,
     getAllAgents,
     getAllWallets,
-    getAllTransactions
+    getAllTransactions,
+    getAllUserStats
 }

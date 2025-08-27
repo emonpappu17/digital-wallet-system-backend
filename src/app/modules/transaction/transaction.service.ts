@@ -8,6 +8,7 @@ import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import httpStatus from "http-status-codes"
 import AppError from "../../errorHelpers/AppError";
 import { FEE_CONFIG } from "./transaction.contrant";
+import { generateTransactionId } from "../../utils/generateTransactionId";
 
 interface ICashIn {
     userPhoneNumber: string,
@@ -42,7 +43,9 @@ const addMoney = async (userId: string, amount: number) => {
         }
 
         userWallet.balance += amount;
-        await userWallet.save();
+        await userWallet.save({ session });
+
+        const transactionId = generateTransactionId();
 
         const transaction = await Transaction.create([
             {
@@ -50,20 +53,24 @@ const addMoney = async (userId: string, amount: number) => {
                 to: user._id,
                 type: TRANSACTION_TYPE.ADD_MONEY,
                 amount,
-                status: TRANSACTION_STATUS.COMPLETED
+                status: TRANSACTION_STATUS.COMPLETED,
+                transactionId
             }
         ], { session })
 
-        await session.commitTransaction();
-        session.endSession;
 
+        await session.commitTransaction();
+        session.endSession();
         return transaction[0];
     } catch (error) {
+
         await session.abortTransaction();
         session.endSession();
         throw error;
     }
 }
+
+
 
 const withdrawMoney = async (userId: string, amount: number) => {
     const session = await mongoose.startSession();
@@ -139,12 +146,14 @@ const sendMoney = async (senderId: string, payload: ISendMoney) => {
 
         await senderWallet.save({ session });
         await receiverWallet.save({ session });
+        const transactionId = generateTransactionId();
 
         const transaction = await Transaction.create([{
             from: sender._id,
             to: receiver._id,
             type: TRANSACTION_TYPE.SEND_MONEY,
             amount,
+            transactionId,
             status: TRANSACTION_STATUS.COMPLETED
         }], { session })
 
@@ -205,6 +214,8 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
         await agentWallet.save({ session });
         await userWallet.save({ session });
 
+        const transactionId = generateTransactionId();
+
         const transaction = await Transaction.create([
             {
                 from: agent._id,
@@ -212,6 +223,7 @@ const cashIn = async (agentId: string, payload: ICashIn) => {
                 type: TRANSACTION_TYPE.CASH_IN,
                 amount,
                 agentCommission: agentCommission,
+                transactionId,
                 status: TRANSACTION_STATUS.COMPLETED
             }
         ], { session });
@@ -274,6 +286,8 @@ const cashOut = async (userId: string, payload: ICashOut) => {
         await agentWallet.save({ session });
         await userWallet.save({ session });
 
+        const transactionId = generateTransactionId();
+
         const transaction = await Transaction.create([
             {
                 from: user._id,
@@ -282,6 +296,7 @@ const cashOut = async (userId: string, payload: ICashOut) => {
                 fee: fee,
                 agentCommission: agentCommission,
                 amount,
+                transactionId,
                 status: TRANSACTION_STATUS.COMPLETED
             }
         ], { session });

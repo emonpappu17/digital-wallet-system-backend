@@ -16,11 +16,17 @@ export const checkAuth = (...authRoles: string[]) => async (req: Request, res: R
 
         const verifiedToken = verifyToken(accessToken, envVars.JWT_ACCESS_SECRET) as JwtPayload;
 
+
+
         const isUserExist = await User.findOne({ phoneNumber: verifiedToken.phoneNumber })
+
+
 
         if (!isUserExist) throw new AppError(httpStatus.NOT_FOUND, "User doest not exist")
 
         if (isUserExist.status === Status.BLOCKED) throw new AppError(httpStatus.FORBIDDEN, "User is Blocked")
+
+
 
         if (!authRoles.includes(verifiedToken.role)) {
             throw new AppError(httpStatus.FORBIDDEN, "You are not permitted to view this route!!")
