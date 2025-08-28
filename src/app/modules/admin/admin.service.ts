@@ -847,7 +847,7 @@ export const getAllUserStats = async (query: Record<string, string>) => {
 
     const pieChartData = pieChartResult.map(item => ({
         type: item._id,
-        value: item.totalAmount,
+        totalAmount: item.totalAmount,
         percentage: pieChartTotal > 0 ? Math.round((item.totalAmount / pieChartTotal) * 100 * 100) / 100 : 0,
         count: item.totalCount,
         fees: item.totalFees,

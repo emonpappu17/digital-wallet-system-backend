@@ -18,8 +18,12 @@ export const checkAuth = (...authRoles: string[]) => async (req: Request, res: R
 
 
 
-        const isUserExist = await User.findOne({ phoneNumber: verifiedToken.phoneNumber })
+        // const isUserExist = await User.findOne({ phoneNumber: verifiedToken.phoneNumber })
 
+
+        const isUserExist = await User.findOne({
+            $or: [{ phoneNumber: verifiedToken.phoneNumber }, { email: verifiedToken.email }]
+        })
 
 
         if (!isUserExist) throw new AppError(httpStatus.NOT_FOUND, "User doest not exist")

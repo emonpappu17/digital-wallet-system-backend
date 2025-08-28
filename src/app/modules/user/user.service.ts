@@ -1,3 +1,6 @@
+import bcryptjs from 'bcryptjs';
+import httpStatus from "http-status-codes";
+import { JwtPayload } from "jsonwebtoken";
 import mongoose from "mongoose";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
@@ -5,10 +8,8 @@ import { AgentRequestStatus } from "../agentRequest/agentRequest.interface";
 import { AgentRequest } from "../agentRequest/agentRequest.model";
 import { Transaction } from "../transaction/transaction.model";
 import { Wallet } from "../wallet.ts/wallet.model";
-import { IUser, Role, Status } from "./user.interface"
+import { IUser, Role, Status } from "./user.interface";
 import { User } from "./user.model";
-import bcryptjs from 'bcryptjs';
-import httpStatus from "http-status-codes"
 
 const createUser = async (payload: IUser) => {
     const { phoneNumber, password, email, ...rest } = payload;
@@ -54,6 +55,58 @@ const myProfile = async (id: string) => {
     return user;
 }
 
+// interface IUser {
+//     name: string;
+//     phoneNumber: string;
+//     password: string;
+// }
+
+export const updateUser = async (
+    payload: { oldPassword?: string; newPassword?: string, name: string, phoneNumber: string },
+    decodedToken: JwtPayload
+) => {
+    // console.log(payload);
+    const user = await User.findById(decodedToken.userId);
+
+    if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
+
+    if (payload.oldPassword && payload.newPassword) {
+        const isOldPasswordMatch = await bcryptjs.compare(
+            payload.oldPassword,
+            user.password
+        );
+
+        if (!isOldPasswordMatch) {
+            throw new AppError(httpStatus.UNAUTHORIZED, "Old password does not match");
+        }
+
+        user.password = await bcryptjs.hash(
+            payload.newPassword,
+            Number(envVars.BCRYPT_SALT_ROUND)
+        );
+    }
+
+
+    if (payload.name) {
+        user.name = payload.name;
+    }
+
+
+    if (payload.phoneNumber) {
+        const isPhoneExist = await User.findOne({ phoneNumber: payload.phoneNumber })
+
+        if (isPhoneExist) throw new AppError(httpStatus.BAD_REQUEST, "Number is already exist")
+
+        user.phoneNumber = payload.phoneNumber;
+    }
+
+    await user.save();
+
+    const { password, ...updatedUser } = user.toObject();
+    return updatedUser;
+};
+
+
 const unblockUser = async (id: string) => {
     const user = await User.findOne({ _id: id, role: Role.USER }).select("-password");
 
@@ -92,7 +145,6 @@ const getUser = async (payload: Partial<IUser>) => {
 
     return user;
 }
-
 
 const getUserStats = async (userId: string, query: Record<string, string>) => {
     const page = parseInt(query.page) || 1;
@@ -160,7 +212,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
             }
         }] : []),
 
-        // Project with role information
         {
             $project: {
                 _id: 1,
@@ -179,6 +230,12 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
                 toEmail: "$toUser.email",
                 toRole: "$toUser.role",
                 // Add a field to identify the counterpart role for the current user
+                counterpartName: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.name", "$fromUser.name"]
+                },
+                counterpartPhone: {
+                    $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.phoneNumber", "$fromUser.phoneNumber"]
+                },
                 counterpartRole: {
                     $cond: {
                         if: { $eq: ["$fromUser._id", objectId] },
@@ -211,14 +268,14 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
 
     const transactions = await Transaction.aggregate(pipeline);
 
-    // Calculate wallet summary with more detailed breakdown
+
     const sentTransactions = transactions.filter(tx => tx.from.toString() === userId);
     const receivedTransactions = transactions.filter(tx => tx.to.toString() === userId);
 
     const totalSent = sentTransactions.reduce((sum, tx) => sum + tx.amount, 0);
     const totalReceived = receivedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
-    // Calculate totals by counterpart role
+
     const sentByRole = sentTransactions.reduce((acc, tx) => {
         const role = tx.toRole;
         acc[role] = (acc[role] || 0) + tx.amount;
@@ -262,5 +319,6 @@ export const UserService = {
     blockUser,
     unblockUser,
     getUser,
-    getUserStats
+    getUserStats,
+    updateUser
 }

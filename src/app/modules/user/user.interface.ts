@@ -22,4 +22,5 @@ export interface IUser {
     status: Status
     nidNumber?: string,
     shopName?: string,
+    oldPassword?: string
 }
