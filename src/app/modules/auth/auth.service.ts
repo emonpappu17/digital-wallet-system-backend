@@ -10,7 +10,7 @@ import httpStatus from "http-status-codes"
 const login = async (payload: Partial<IUser>) => {
     const { phoneNumber, email, password } = payload;
 
-    console.log({ payload });
+    // console.log({ payload });
 
     // const user = await User.findOne({ phoneNumber })
     const user = await User.findOne({
@@ -18,6 +18,10 @@ const login = async (payload: Partial<IUser>) => {
     })
 
     if (!user || user.status === Status.PENDING) throw new AppError(httpStatus.NOT_FOUND, "This User is not exists")
+
+    if (user?.status === Status.BLOCKED) throw new AppError(httpStatus.NOT_FOUND, "User is blocked")
+
+    if (user.status === Status.SUSPEND) throw new AppError(httpStatus.NOT_FOUND, "Agent is suspended")
 
     const isPasswordMatched = await bcrypt.compare(password as string, user.password)
 
