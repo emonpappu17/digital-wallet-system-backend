@@ -84,27 +84,11 @@ const approveAgentRequest = async (id: string) => {
         return rest
     }
 
-    // const agentReq = await AgentRequest.findById(id);
-
-    // const isUserExist = await User.findOne({
-    //     $or: [{ phoneNumber: agentReq?.phoneNumber }, { email: agentReq?.email }]
-    // })
-
-
-    // const request = await AgentRequest.findByIdAndUpdate(id, { status: AgentRequestStatus.ACTIVE })
-
-    // if (!request) throw new AppError(httpStatus.NOT_FOUND, "Request not found")
-
     if (user?.status === Status.ACTIVE) throw new AppError(httpStatus.BAD_REQUEST, "User are already approved to Agent")
 
     const agentUser = await User.findByIdAndUpdate(id, { status: Status.ACTIVE }, { new: true })
 
     if (!agentUser) throw new AppError(httpStatus.NOT_FOUND, "Request not found")
-
-    // const agentUser = await User.create({
-
-    //     role: Role.AGENT,
-    // })
 
     await Wallet.create({
         user: agentUser?._id,
@@ -127,11 +111,9 @@ const suspendAgent = async (id: string) => {
 
     const agent = await User.findByIdAndUpdate(id, { status: AgentRequestStatus.SUSPEND }, { new: true }).select("-password")
 
-
     const update = await AgentRequest.findOneAndUpdate({
         $or: [{ phoneNumber: agent?.phoneNumber }, { email: agent?.email }]
     }, { status: AgentRequestStatus.SUSPEND }, { new: true })
-
 
     if (!agent || agent.role !== Role.AGENT) throw new AppError(httpStatus.NOT_FOUND, "Agent not found")
     return agent;
@@ -153,11 +135,6 @@ const getAgent = async (payload: Partial<IUser>) => {
     return agent;
 }
 
-// const getAgentStats = async (agentId: string, query: Record<string, string>) => {
-
-// }
-
-
 const getAgentStats = async (agentId: string, query: Record<string, string>) => {
     const page = parseInt(query.page) || 1;
     const limit = parseInt(query.limit) || 10;
@@ -170,7 +147,7 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
 
     const skip = (page - 1) * limit;
     const objectId = new mongoose.Types.ObjectId(agentId);
-    const txCollName = Transaction.collection.name;
+    // const txCollName = Transaction.collection.name;
     const userCollName = User.collection.name;
 
     //  agent info
@@ -180,7 +157,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
     //  wallet 
     const wallet = await Wallet.findOne({ user: objectId }).select("balance");
 
-    // Build base match: transactions where agent is either from or to
     const matchConditions: any = {
         $or: [
             { from: objectId },
@@ -192,11 +168,9 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
     if (dateFrom) matchConditions.createdAt.$gte = dateFrom;
     if (dateTo) matchConditions.createdAt.$lte = dateTo;
 
-    // Base pipeline: match + lookups for fromUser & toUser
     const pipeline: mongoose.PipelineStage[] = [
         { $match: matchConditions },
 
-        // Lookup sender (from)
         {
             $lookup: {
                 from: userCollName,
@@ -207,7 +181,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
         },
         { $unwind: "$fromUser" },
 
-        // Lookup receiver (to)
         {
             $lookup: {
                 from: userCollName,
@@ -219,7 +192,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
         { $unwind: "$toUser" }
     ];
 
-    // Optional search filter (search counterpart or tx id)
     if (search) {
         const s = search.trim();
         pipeline.push({
@@ -237,7 +209,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
         });
     }
 
-    // 1) Count pipeline (count total matching transactions)
     const countPipeline = [...pipeline, { $count: "total" }];
     const countResult = await Transaction.aggregate(countPipeline);
     const totalCount = countResult[0]?.total || 0;
@@ -259,7 +230,7 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
                             {
                                 $and: [
                                     { $eq: ["$type", "CASH_IN"] },
-                                    { $eq: ["$fromUser._id", objectId] } // agent is 'from' => agent performed cash-in to user
+                                    { $eq: ["$fromUser._id", objectId] } 
                                 ]
                             },
                             "$amount",
@@ -273,7 +244,7 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
                             {
                                 $and: [
                                     { $eq: ["$type", "CASH_OUT"] },
-                                    { $eq: ["$toUser._id", objectId] } // agent is 'to' => agent handled user's cash-out
+                                    { $eq: ["$toUser._id", objectId] } 
                                 ]
                             },
                             "$amount",
@@ -295,11 +266,9 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
         totalCashOutHandled: 0
     };
 
-    // 3) Final pipeline for list: same pipeline + project fields + sort + paginate
     const listPipeline: mongoose.PipelineStage[] = [
         ...pipeline,
 
-        // Project fields and determine counterpart & direction relative to agent
         {
             $project: {
                 _id: 1,
@@ -318,13 +287,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
                 toPhone: "$toUser.phoneNumber",
                 toRole: "$toUser.role",
 
-                // is agent the 'from' side?
-                // isAgentFrom: { $eq: ["$fromUser._id", objectId] },
-
-                // counterpart info: if agent is from -> counterpart is 'toUser', else counterpart is 'fromUser'
-                // counterpartId: {
-                //     $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser._id", "$fromUser._id"]
-                // },
                 counterpartName: {
                     $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.name", "$fromUser.name"]
                 },
@@ -334,26 +296,10 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
                 counterpartRole: {
                     $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.role", "$fromUser.role"]
                 },
-                // direction relative to agent (OUT = agent->other, IN = other->agent)
+         
                 direction: {
                     $cond: [{ $eq: ["$fromUser._id", objectId] }, "OUT", "IN"]
                 },
-                // readable agent action: CASH_IN_BY_AGENT, CASH_OUT_BY_AGENT, or OTHER
-                // agentAction: {
-                //     $switch: {
-                //         branches: [
-                //             {
-                //                 case: { $and: [{ $eq: ["$type", "CASH_IN"] }, { $eq: ["$fromUser._id", objectId] }] },
-                //                 then: "CASH_IN_BY_AGENT"
-                //             },
-                //             {
-                //                 case: { $and: [{ $eq: ["$type", "CASH_OUT"] }, { $eq: ["$toUser._id", objectId] }] },
-                //                 then: "CASH_OUT_BY_AGENT"
-                //             }
-                //         ],
-                //         default: "OTHER"
-                //     }
-                // }
             }
         },
 
@@ -364,9 +310,6 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
     ];
 
     const transactions = await Transaction.aggregate(listPipeline);
-
-    // Optionally compute per-page sums (if desired) - here we compute per-page commission sum
-    // const pageCommission = transactions.reduce((s: number, t: any) => s + (t.agentCommission || 0), 0);
 
     return {
         agent: {
@@ -386,16 +329,14 @@ const getAgentStats = async (agentId: string, query: Record<string, string>) => 
             totalCashInHandled: statsAgg.totalCashInHandled || 0,
             totalCashOutHandled: statsAgg.totalCashOutHandled || 0,
             totalCommissionEarned: statsAgg.totalCommission || 0,
-            // totalFeesCollected: statsAgg.totalFees || 0,
             totalTransactions: statsAgg.txCount || 0
         },
-        transactions, // paginated list with counterpart and agentAction/direction metadata
+        transactions,
         meta: {
             currentPage: page,
             totalPages,
             totalCount,
             limit,
-            // pageCommission
         }
     };
 };

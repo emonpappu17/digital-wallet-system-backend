@@ -49,7 +49,7 @@ const login = async (payload: Partial<IUser>) => {
 
 const getNewAccessToken = async (refreshToken: string) => {
 
-    console.log(refreshToken);
+    // console.log(refreshToken);
     const newAccessToken = await createNewAccessTokenWithRefreshToken(refreshToken)
     console.log({ newAccessToken });
     return {

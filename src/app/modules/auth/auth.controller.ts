@@ -21,7 +21,7 @@ const login = catchAsync(async (req: Request, res: Response, next: NextFunction)
 })
 
 const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const refreshToken = req.headers.authorization;
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) throw new AppError(httpStatus.BAD_REQUEST, "No refresh token received from cookies");
 

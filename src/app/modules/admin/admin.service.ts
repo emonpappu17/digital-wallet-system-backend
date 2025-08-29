@@ -295,10 +295,7 @@ const getAllUsers = async (query: Record<string, string>) => {
     const walletCollName = Wallet.collection.name;
     const txCollName = Transaction.collection.name;
 
-    // Build match conditions
     const matchConditions: any = { role: Role.USER };
-
-    // Add search functionality
     if (search) {
         matchConditions.$or = [
             { name: { $regex: search, $options: 'i' } },
@@ -307,12 +304,10 @@ const getAllUsers = async (query: Record<string, string>) => {
         ];
     }
 
-    // Add status filter
     if (status) {
         matchConditions.status = status;
     }
 
-    // Add date range filter
     if (dateFrom || dateTo) {
         matchConditions.createdAt = {};
         if (dateFrom) matchConditions.createdAt.$gte = new Date(dateFrom);
@@ -320,10 +315,10 @@ const getAllUsers = async (query: Record<string, string>) => {
     }
 
     const pipeline: mongoose.PipelineStage[] = [
-        // Step-1: Initial match
+        // Step-1
         { $match: matchConditions },
 
-        // Step-2: Lookup wallet
+        // Step-2
         {
             $lookup: {
                 from: walletCollName,
@@ -333,12 +328,12 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Step-3: Unwind wallet
+        // Step-3
         {
             $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
         },
 
-        // Step-4: Lookup transactions
+        // Step-4
         {
             $lookup: {
                 from: txCollName,
@@ -365,7 +360,7 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Step-5: Add calculated fields
+        // Step-5
         {
             $addFields: {
                 transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
@@ -380,14 +375,14 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Step-6: Filter by calculated fields
+        // Step-6
         {
             $match: {
                 ...(minTransactionVolume !== undefined && { transactionVolume: { $gte: minTransactionVolume } }),
             }
         },
 
-        // Step-7: Project final fields
+        // Step-7
         {
             $project: {
                 password: 0,
@@ -396,12 +391,10 @@ const getAllUsers = async (query: Record<string, string>) => {
         }
     ];
 
-    // Pipeline for overall statistics (without filters except role)
+    
     const statisticsPipeline: mongoose.PipelineStage[] = [
-        // Match only agents (no other filters applied)
         { $match: { role: Role.USER } },
 
-        // Lookup wallet
         {
             $lookup: {
                 from: walletCollName,
@@ -411,12 +404,10 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Unwind wallet
         {
             $unwind: { path: "$wallet", preserveNullAndEmptyArrays: true }
         },
 
-        // Lookup transactions
         {
             $lookup: {
                 from: txCollName,
@@ -443,7 +434,6 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Add calculated fields
         {
             $addFields: {
                 transactionsCount: { $size: { $ifNull: ["$transactions", []] } },
@@ -457,7 +447,6 @@ const getAllUsers = async (query: Record<string, string>) => {
             }
         },
 
-        // Group to calculate overall statistics
         {
             $group: {
                 _id: null,
@@ -478,19 +467,16 @@ const getAllUsers = async (query: Record<string, string>) => {
         }
     ];
 
-    // Create separate pipeline for counting filtered documents
     const countPipeline = [...pipeline, { $count: "total" }];
 
-    // Add sorting
     const sortStage: any = {};
     sortStage[sortBy] = sortOrder === 'desc' ? -1 : 1;
     pipeline.push({ $sort: sortStage });
 
-    // Add pagination
+    //  pagination
     pipeline.push({ $skip: skip });
     pipeline.push({ $limit: limit });
 
-    // Execute all queries in parallel
     const [usersWithStats, countResult, statisticsResult] = await Promise.all([
         User.aggregate(pipeline).exec(),
         User.aggregate(countPipeline).exec(),
@@ -543,182 +529,6 @@ const getAllTransactions = async () => {
 
     return transactions;
 }
-
-
-// export const getAllUserStats = async (query: Record<string, string>) => {
-//     const page = parseInt(query.page as string) || 1;
-//     const limit = parseInt(query.limit as string) || 10;
-//     const sortBy = (query.sortBy as string) || "createdAt";
-//     const sortOrder = (query.sortOrder as string) === "asc" ? 1 : -1;
-//     const search = (query.search || "").trim();
-//     const type = query.type as string | undefined;
-//     const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
-//     const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
-//     const roleFilter = (query.role as string | undefined)?.toUpperCase();
-
-//     const skip = (page - 1) * limit;
-
-//     const userCollName = User.collection.name;
-
-//     const userMatch: any = {};
-//     if (roleFilter) userMatch.role = roleFilter;
-//     if (search) {
-//         const s = new RegExp(search, "i");
-//         userMatch.$or = [
-//             { name: { $regex: s } },
-//             { email: { $regex: s } },
-//             { phoneNumber: { $regex: s } }
-//         ];
-//     }
-
-//     const totalUsers = await User.countDocuments(userMatch);
-
-
-//     const totalAgents = await User.countDocuments({ role: "AGENT" });
-
-//     const txMatch: any = {};
-
-//     if (type) txMatch.type = type;
-//     if (dateFrom || dateTo) {
-//         txMatch.createdAt = {};
-//         if (dateFrom) txMatch.createdAt.$gte = dateFrom;
-//         if (dateTo) txMatch.createdAt.$lte = dateTo;
-//     }
-
-//     const baseTxPipeline: mongoose.PipelineStage[] = [{ $match: txMatch }];
-
-
-//     baseTxPipeline.push(
-//         {
-//             $lookup: {
-//                 from: userCollName,
-//                 localField: "from",
-//                 foreignField: "_id",
-//                 as: "fromUser"
-//             }
-//         },
-//         { $unwind: { path: "$fromUser", preserveNullAndEmptyArrays: true } },
-//         {
-//             $lookup: {
-//                 from: userCollName,
-//                 localField: "to",
-//                 foreignField: "_id",
-//                 as: "toUser"
-//             }
-//         },
-//         { $unwind: { path: "$toUser", preserveNullAndEmptyArrays: true } }
-//     );
-
-
-//     if (search) {
-//         const s = new RegExp(search, "i");
-//         baseTxPipeline.push({
-//             $match: {
-//                 $or: [
-//                     { _id: { $regex: search } },
-//                     { "fromUser.name": { $regex: s } },
-//                     { "fromUser.email": { $regex: s } },
-//                     { "fromUser.phoneNumber": { $regex: s } },
-//                     { "toUser.name": { $regex: s } },
-//                     { "toUser.email": { $regex: s } },
-//                     { "toUser.phoneNumber": { $regex: s } },
-//                     { amount: isNaN(Number(search)) ? -1 : Number(search) }
-//                 ]
-//             }
-//         });
-//     }
-
-
-//     const txCountPipeline = [...baseTxPipeline, { $count: "total" }];
-//     const txCountResult = await Transaction.aggregate(txCountPipeline);
-//     const totalTxCount = txCountResult[0]?.total || 0;
-//     const txTotalPages = Math.ceil(totalTxCount / limit);
-
-
-//     const statsPipeline: mongoose.PipelineStage[] = [
-//         ...baseTxPipeline,
-//         {
-//             $group: {
-//                 _id: null,
-//                 totalVolume: { $sum: "$amount" },
-//                 totalTransactions: { $sum: 1 },
-//                 totalCommission: { $sum: { $ifNull: ["$agentCommission", 0] } },
-//                 totalFees: { $sum: { $ifNull: ["$fee", 0] } },
-//                 byType: {
-//                     $push: { type: "$type", amount: "$amount" }
-//                 }
-//             }
-//         }
-//     ];
-//     const statsRes = await Transaction.aggregate(statsPipeline);
-//     const overallStats = statsRes[0] || {
-//         totalVolume: 0,
-//         totalTransactions: 0,
-//         totalCommission: 0,
-//         totalFees: 0,
-//         byType: []
-//     };
-
-
-//     const listPipeline: mongoose.PipelineStage[] = [
-//         ...baseTxPipeline,
-//         {
-//             $project: {
-//                 _id: 1,
-//                 amount: 1,
-//                 type: 1,
-//                 fee: 1,
-//                 agentCommission: 1,
-//                 status: 1,
-//                 createdAt: 1,
-//                 from: "$fromUser._id",
-//                 fromName: "$fromUser.name",
-//                 fromEmail: "$fromUser.email",
-//                 fromPhone: "$fromUser.phoneNumber",
-//                 fromRole: "$fromUser.role",
-//                 to: "$toUser._id",
-//                 toName: "$toUser.name",
-//                 toEmail: "$toUser.email",
-//                 toPhone: "$toUser.phoneNumber",
-//                 toRole: "$toUser.role",
-
-//                 counterpart: {
-//                     $cond: [
-//                         { $and: [{ $ne: ["$fromUser", null] }, { $ne: ["$toUser", null] }] },
-//                         { from: "$fromUser.name", to: "$toUser.name" },
-//                         { from: "$fromUser.name", to: "$toUser.name" }
-//                     ]
-//                 }
-//             }
-//         },
-//         { $sort: { [sortBy]: sortOrder } },
-//         { $skip: skip },
-//         { $limit: limit }
-//     ];
-//     const transactions = await Transaction.aggregate(listPipeline);
-
-//     return {
-//         totals: {
-//             totalUsers,
-//             totalAgents,
-//             totalTransactions: overallStats.totalTransactions || totalTxCount,
-//             totalTransactionVolume: overallStats.totalVolume || 0,
-//             totalCommission: overallStats.totalCommission || 0,
-//             totalFees: overallStats.totalFees || 0,
-//         },
-//         transactions: {
-//             list: transactions,
-//         },
-//         meta: {
-//             currentPage: page,
-//             limit,
-//             totalPages: txTotalPages,
-//             totalCount: totalTxCount
-//         }
-//     };
-// };
-
-
 
 export const getAllUserStats = async (query: Record<string, string>) => {
     const page = parseInt(query.page as string) || 1;
@@ -828,7 +638,7 @@ export const getAllUserStats = async (query: Record<string, string>) => {
         byType: []
     };
 
-    // NEW: Pie Chart Data - Transaction distribution by type
+    //  Pie Chart Data 
     const pieChartPipeline: mongoose.PipelineStage[] = [
         { $match: { ...txMatch, status: "COMPLETED" } },
         {
@@ -854,7 +664,7 @@ export const getAllUserStats = async (query: Record<string, string>) => {
         commission: item.totalCommission
     }));
 
-    // NEW: Bar Chart Data - Daily transaction volume by type (last 7 days if no date filter)
+    //  Bar Chart Data 
     const barChartDateFrom = dateFrom || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const barChartDateTo = dateTo || new Date();
 

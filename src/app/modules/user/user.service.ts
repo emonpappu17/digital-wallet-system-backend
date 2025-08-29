@@ -55,11 +55,6 @@ const myProfile = async (id: string) => {
     return user;
 }
 
-// interface IUser {
-//     name: string;
-//     phoneNumber: string;
-//     password: string;
-// }
 
 export const updateUser = async (
     payload: { oldPassword?: string; newPassword?: string, name: string, phoneNumber: string },
@@ -152,23 +147,21 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
     const sortBy = query.sortBy || 'createdAt';
     const sortOrder = query.sortOrder || 'desc';
     const search = query.search;
-    const type = query.type; // transaction type filter
+    const type = query.type; 
     const dateFrom = query.dateFrom ? new Date(query.dateFrom) : undefined;
     const dateTo = query.dateTo ? new Date(query.dateTo) : undefined;
-
     const skip = (page - 1) * limit;
     const objectId = new mongoose.Types.ObjectId(userId);
     const txCollName = Transaction.collection.name;
     const userCollName = User.collection.name;
 
-    // Fetch user info
+    //  user info
     const user = await User.findById(userId).select("name email phoneNumber");
     if (!user) throw new AppError(httpStatus.NOT_FOUND, "User not found");
 
-    // Fetch wallet
+    //  wallet
     const wallet = await Wallet.findOne({ user: objectId }).select("balance");
 
-    // Match transactions
     const matchConditions: any = { $or: [{ from: objectId }, { to: objectId }] };
     if (type) matchConditions.type = type;
     if (dateFrom || dateTo) matchConditions.createdAt = {};
@@ -177,8 +170,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
 
     const pipeline: mongoose.PipelineStage[] = [
         { $match: matchConditions },
-
-        // Lookup sender
         {
             $lookup: {
                 from: userCollName,
@@ -189,7 +180,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
         },
         { $unwind: "$fromUser" },
 
-        // Lookup receiver
         {
             $lookup: {
                 from: userCollName,
@@ -200,7 +190,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
         },
         { $unwind: "$toUser" },
 
-        // Optional search filter
         ...(search ? [{
             $match: {
                 $or: [
@@ -229,7 +218,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
                 toName: "$toUser.name",
                 toEmail: "$toUser.email",
                 toRole: "$toUser.role",
-                // Add a field to identify the counterpart role for the current user
                 counterpartName: {
                     $cond: [{ $eq: ["$fromUser._id", objectId] }, "$toUser.name", "$fromUser.name"]
                 },
@@ -243,7 +231,6 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
                         else: "$fromUser.role"
                     }
                 },
-                // Add a field to identify transaction direction for the current user
                 direction: {
                     $cond: {
                         if: { $eq: ["$fromUser._id", objectId] },
@@ -255,13 +242,13 @@ const getUserStats = async (userId: string, query: Record<string, string>) => {
         }
     ];
 
-    // Count for meta
+    //  meta
     const countPipeline = [...pipeline, { $count: "total" }];
     const countResult = await Transaction.aggregate(countPipeline);
     const totalCount = countResult[0]?.total || 0;
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Sorting & pagination
+    // Sorting / pagination
     pipeline.push({ $sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 } });
     pipeline.push({ $skip: skip });
     pipeline.push({ $limit: limit });
