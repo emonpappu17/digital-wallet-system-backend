@@ -7,6 +7,10 @@ router.post(
     "/login",
     authController.login
 )
+router.post(
+    "/refresh-token",
+    authController.getNewAccessToken
+)
 
 router.post(
     "/logout",

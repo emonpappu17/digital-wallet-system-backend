@@ -1,11 +1,11 @@
 import bcrypt from 'bcrypt';
-import { Error } from "mongoose";
+import httpStatus from "http-status-codes";
 import { envVars } from "../../config/env";
+import AppError from '../../errorHelpers/AppError';
 import { generateToken } from "../../utils/jwt";
+import { createNewAccessTokenWithRefreshToken } from '../../utils/userToken';
 import { IUser, Status } from "../user/user.interface";
 import { User } from "../user/user.model";
-import AppError from '../../errorHelpers/AppError';
-import httpStatus from "http-status-codes"
 
 const login = async (payload: Partial<IUser>) => {
     const { phoneNumber, email, password } = payload;
@@ -19,13 +19,13 @@ const login = async (payload: Partial<IUser>) => {
 
     if (!user || user.status === Status.PENDING) throw new AppError(httpStatus.NOT_FOUND, "This User is not exists")
 
+    const isPasswordMatched = await bcrypt.compare(password as string, user.password)
+
+    if (!isPasswordMatched) throw new AppError(httpStatus.BAD_REQUEST, "Password did not match");
+
     if (user?.status === Status.BLOCKED) throw new AppError(httpStatus.NOT_FOUND, "User is blocked")
 
     if (user.status === Status.SUSPEND) throw new AppError(httpStatus.NOT_FOUND, "Agent is suspended")
-
-    const isPasswordMatched = await bcrypt.compare(password as string, user.password)
-
-    if (!isPasswordMatched) throw new AppError(httpStatus.BAD_REQUEST, "Password did not match")
 
     const jwtPayload = {
         userId: user._id,
@@ -47,6 +47,17 @@ const login = async (payload: Partial<IUser>) => {
     }
 }
 
+const getNewAccessToken = async (refreshToken: string) => {
+
+    console.log(refreshToken);
+    const newAccessToken = await createNewAccessTokenWithRefreshToken(refreshToken)
+    console.log({ newAccessToken });
+    return {
+        accessToken: newAccessToken
+    }
+}
+
 export const AuthService = {
-    login
+    login,
+    getNewAccessToken
 }

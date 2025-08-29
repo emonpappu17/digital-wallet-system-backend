@@ -5,6 +5,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { setAuthCookie } from "../../utils/setCookie";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes"
+import AppError from "../../errorHelpers/AppError";
 
 
 const login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -19,18 +20,39 @@ const login = catchAsync(async (req: Request, res: Response, next: NextFunction)
     })
 })
 
+const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const refreshToken = req.headers.authorization;
+
+    if (!refreshToken) throw new AppError(httpStatus.BAD_REQUEST, "No refresh token received from cookies");
+
+    const tokenInfo = await AuthService.getNewAccessToken(refreshToken as string)
+
+    setAuthCookie(res, tokenInfo);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "New Access Token Retrieved Successfully",
+        data: tokenInfo
+    })
+})
+
 const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
     res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: true,
+        // secure: false,
+        sameSite: "none"
+        // sameSite: "lax"
     })
 
     res.clearCookie("refreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: true,
+        // secure: false,
+        sameSite: "none"
+        // sameSite: "lax"
     })
 
     sendResponse(res, {
@@ -43,5 +65,6 @@ const logout = catchAsync(async (req: Request, res: Response, next: NextFunction
 
 export const authController = {
     login,
-    logout
+    logout,
+    getNewAccessToken
 }

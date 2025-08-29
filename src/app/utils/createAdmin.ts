@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 
 export const createAdmin = async () => {
     try {
-        const isAdminExist = await User.findOne({ phoneNumber: envVars.ADMIN_PHONE_NUMBER })
+        const isAdminExist = await User.findOne({ email: envVars.ADMIN_EMAIL })
 
         if (isAdminExist) {
             console.log("Admin already exist!");
@@ -16,11 +16,12 @@ export const createAdmin = async () => {
         const hashedPassword = await bcrypt.hash(envVars.ADMIN_PASSWORD, Number(envVars.BCRYPT_SALT_ROUND));
 
         const payload: IUser = {
-            name: "Admin Man",
+            name: "Jhankar Mahbub",
             password: hashedPassword,
             photo: "https://github.com/shadcn.png",
-            email: "admin@gmail.com",
-            phoneNumber: envVars.ADMIN_PHONE_NUMBER,
+            // email: "jhankarmahbub@gmail.com",
+            email: envVars.ADMIN_EMAIL,
+            phoneNumber: envVars.ADMIN_PHONE,
             role: Role.ADMIN,
             status: Status.ACTIVE
         }
